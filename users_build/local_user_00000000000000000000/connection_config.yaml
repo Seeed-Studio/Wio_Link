@@ -1,0 +1,8 @@
+GroveRelay:
+    sku: 103020005
+    name: Grove_Relay
+    construct_arg_list:
+        pin: 14
+
+
+
