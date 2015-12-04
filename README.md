@@ -65,7 +65,11 @@ The sandbox servers are free to use, but we can't guarantee the quality of the s
 
 ## How to write module driver for Wio Link? 
 
-Please move to this [guide](https://github.com/Seeed-Studio/Wio_Link/wiki/How-to-write-module-driver-for-Wio-Link%3F).
+A compatible module driver can be scanned by the server and be integrated into the online compilation service. Users can develop driver for their own modules. The low level of this project is based on the esp8266 Arduino project. Arduino SDK functions can be called in the drivers.
+
+The only difference between writing a Wio Link compatible driver and writing an Arduino compatible driver is that, you need to follow some rules to write the header file. It is for the scanning script to process it correctly. Please move to this [guide](https://github.com/Seeed-Studio/Wio_Link/wiki/How-to-write-module-driver-for-Wio-Link%3F) to see the rules.
+
+Users can pull request to this github repo to integrate the developed driver into the online compiling system, and at the same time into the mobile App. SEEED's staff will test the merged driver. If it's written correctly, we will accept the pull request and update the web services to let users use this module. For advanced users, we recommend to deploy a self server, to add 3rd party drivers immediately.
 
 ## License
 
