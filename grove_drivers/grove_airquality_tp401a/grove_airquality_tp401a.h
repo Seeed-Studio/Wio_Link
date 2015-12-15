@@ -44,6 +44,9 @@ class GroveAirquality
 public:
     GroveAirquality(int pin);
     
+    bool on_power_on();
+    bool on_power_off();
+    
     /**
      * Get the analog reading of air quality. The air quality sensor is is designed for comprehensive 
      * monitor over indoor air condition. It's responsive to a wide scope of harmful gases, as carbon 

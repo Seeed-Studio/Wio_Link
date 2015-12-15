@@ -1,5 +1,5 @@
 /*
- * grove_magnetic_switch.h
+ * grove_generic_pwm_out.cpp
  *
  * Copyright (c) 2012 seeed technology inc.
  * Website    : www.seeed.cc
@@ -26,44 +26,43 @@
  * THE SOFTWARE.
  */
 
-
-#ifndef __GROVE_MAGNETIC_SWITCH_H__
-#define __GROVE_MAGNETIC_SWITCH_H__
-
 #include "suli2.h"
+#include "grove_generic_pwm_out.h"
 
-//GROVE_NAME        "Grove-Magnetic Switch"
-//SKU               101020038
-//IF_TYPE           GPIO
-//IMAGE_URL         http://www.seeedstudio.com/wiki/images/thumb/c/c0/Magnetic_Switch.jpg/400px-Magnetic_Switch.jpg
-
-class GroveMagneticSwitch
+GenericPWMOut::GenericPWMOut(int pin)
 {
-public:
-    GroveMagneticSwitch(int pin);
-    
-    /**
-     * Read the status if a magnet is approaching the sensor.
-     * 
-     * @param approach - 1: magnet approached 0: not
-     * 
-     * @return bool 
-     */
-    bool read_approach(uint8_t *mag_approach);
-    
-    /**
-     * Event data is the number of the PIN to which the grove is attached
-     * 
-     * @param reporter 
-     * 
-     * @return EVENT_T* 
-     */
-    EVENT_T * attach_event_reporter_for_mag_approached(EVENT_CALLBACK_T reporter);
-    EVENT_T *event;
-    IO_T *io;
-    uint32_t time;
-};
+    this->io = (PWM_T *)malloc(sizeof(PWM_T));
 
-static void mag_approach_interrupt_handler(void *para);
+    suli_pwm_init(this->io, pin);
+    
+    _freq = 1000;
+    _percent = 0.0;
+}
 
-#endif
+bool GenericPWMOut::write_pwm(float duty_percent)
+{
+    _percent = duty_percent;
+    
+    suli_pwm_output(io, duty_percent);
+    
+    return true;
+}
+bool GenericPWMOut::write_pwm_with_freq(float duty_percent, uint32_t freq)
+{
+    _freq = freq;
+    _percent = duty_percent;
+    
+    suli_pwm_frequency(io, freq);
+    suli_pwm_output(io, duty_percent);
+    
+    return true;
+    
+}
+bool GenericPWMOut::read_pwm(float *duty_percent, uint32_t *freq)
+{
+    *duty_percent = _percent;
+    *freq = _freq;
+    
+    return true;
+}
+

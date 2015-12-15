@@ -43,14 +43,23 @@ public:
     GroveButton(int pin);
     
     /**
-     * 
+     * Get the status of button
      * 
      * @param pressed - 1: pressed, 0: not
      * 
      * @return bool 
      */
     bool read_pressed(uint8_t *pressed);
-    EVENT_T * attach_event_reporter_for_button_pressed(CALLBACK_T reporter);
+    
+    /**
+     * Event which is triggered when the button is pressed, 
+     * event data is the number of PIN where the button is attached.
+     * 
+     * @param reporter 
+     * 
+     * @return EVENT_T* 
+     */
+    EVENT_T * attach_event_reporter_for_button_pressed(EVENT_CALLBACK_T reporter);
     EVENT_T *event;
     IO_T *io;
     uint32_t time;

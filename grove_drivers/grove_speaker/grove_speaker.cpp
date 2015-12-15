@@ -111,7 +111,7 @@ bool GroveSpeaker::write_sound_ms(int freq, int duration_ms)
 bool GroveSpeaker::write_sound_start(int freq)
 {
     suli_pwm_frequency(this->io, freq);
-    suli_pwm_output(this->io, 0.5);
+    suli_pwm_output(this->io, 50);
     return true;
 }
 

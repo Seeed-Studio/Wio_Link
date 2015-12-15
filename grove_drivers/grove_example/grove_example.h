@@ -34,34 +34,60 @@
 
 //GROVE_NAME        "Grove_Example"
 //SKU               71714fec-8911-11e5-af63-feff819cdc9f
-//IF_TYPE           EPYT_FI
+//IF_TYPE           GPIO
 //IMAGE_URL         http://www.seeedstudio.com/depot/includes/templates/bootstrap/images/ico/grove.png
 
 class GroveExample
 {
 public:
-    GroveExample(int pinsda, int pinscl);
+    GroveExample(int pin);
+    
+    /**
+     * This is the comment for read_temp, with the format showed here 
+     * Multipul lines are allowed. 
+     * 
+     * @param temp - desc for this variable
+     * 
+     * @return bool 
+     */
     bool read_temp(int *temp);
     bool read_uint8_value(uint8_t *value);
     bool read_humidity(float *humidity);
     bool read_acc(float *ax, float *ay, float *az);
     bool read_compass(float *cx, float *cy, float *cz, int *degree);
     bool read_with_arg(float *cx, float *cy, float *cz, int *degree, int arg);
+    
+    /**
+     * This is the description for write_acc_mode.
+     * 
+     * @param mode - desc for param mode
+     * 
+     * @return bool 
+     */
     bool write_acc_mode(uint8_t mode);
     bool write_float_value(float f);
     bool write_multi_value(int a, float b, uint32_t c);
-    EVENT_T *attach_event_reporter_for_fire(CALLBACK_T reporter);
+    
+    /**
+     * This is the description for event 'fire' 
+     * Multipul lines are allowed.
+     */
+    EVENT_T *attach_event_reporter_for_fire(EVENT_CALLBACK_T reporter);
     char *get_last_error() { return error_desc; };
 
-    IO_T *pin;
+    IO_T *io;
     EVENT_T *event1;
+    TIMER_T *timer;
+    TIMER_T *timer1;
+    int var;
 
 private:
-    I2C_T *i2c;
     void _internal_function(float x);
     char *error_desc;
 };
 
 static void pin_interrupt_handler(void *para);
+static void timer_handler(void *para);
+static void timer1_handler(void *para);
 
 #endif

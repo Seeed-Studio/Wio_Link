@@ -46,7 +46,7 @@ bool GroveButton::read_pressed(uint8_t *pressed)
 }
 
 
-EVENT_T * GroveButton::attach_event_reporter_for_button_pressed(CALLBACK_T reporter)
+EVENT_T * GroveButton::attach_event_reporter_for_button_pressed(EVENT_CALLBACK_T reporter)
 {
     this->event = (EVENT_T *)malloc(sizeof(EVENT_T));
 
@@ -66,5 +66,5 @@ static void button_interrupt_handler(void *para)
         return;
     }
     g->time = millis();
-    suli_event_trigger(g->event, *(g->io));
+    suli_event_trigger(g->event, (void *)(g->io), SULI_EDT_INT);
 }

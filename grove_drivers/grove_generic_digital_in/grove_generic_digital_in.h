@@ -50,7 +50,15 @@ public:
      * @return bool 
      */
     bool read_input(uint8_t *input);
-    EVENT_T * attach_event_reporter_for_input_changed(CALLBACK_T reporter);
+    
+    /**
+     * Event data is the number of the PIN to which the grove is attached
+     * 
+     * @param reporter 
+     * 
+     * @return EVENT_T* 
+     */
+    EVENT_T * attach_event_reporter_for_input_changed(EVENT_CALLBACK_T reporter);
     EVENT_T *event;
     IO_T *io;
     uint32_t time;

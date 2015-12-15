@@ -46,7 +46,7 @@ bool GrovePIRMotion::read_approach(uint8_t *approach)
 }
 
 
-EVENT_T * GrovePIRMotion::attach_event_reporter_for_ir_approached(CALLBACK_T reporter)
+EVENT_T * GrovePIRMotion::attach_event_reporter_for_ir_approached(EVENT_CALLBACK_T reporter)
 {
     this->event = (EVENT_T *)malloc(sizeof(EVENT_T));
 
@@ -67,5 +67,5 @@ static void pir_motion_interrupt_handler(void *para)
     }
     g->time = millis();
     Serial1.printf("ttt");
-    suli_event_trigger(g->event, *(g->io));
+    suli_event_trigger(g->event, (void *)(g->io), SULI_EDT_INT);
 }

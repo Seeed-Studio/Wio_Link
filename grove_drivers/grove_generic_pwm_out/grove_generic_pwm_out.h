@@ -1,5 +1,5 @@
 /*
- * grove_magnetic_switch.h
+ * grove_generic_pwm_out.h
  *
  * Copyright (c) 2012 seeed technology inc.
  * Website    : www.seeed.cc
@@ -27,43 +27,57 @@
  */
 
 
-#ifndef __GROVE_MAGNETIC_SWITCH_H__
-#define __GROVE_MAGNETIC_SWITCH_H__
+#ifndef __GROVE_GENERIC_PWM_OUT_H__
+#define __GROVE_GENERIC_PWM_OUT_H__
 
 #include "suli2.h"
 
-//GROVE_NAME        "Grove-Magnetic Switch"
-//SKU               101020038
+//GROVE_NAME        "Generic PWM/Analog Output"
+//SKU               63e25800-a2d2-11e5-bf7f-feff819cdc9f
 //IF_TYPE           GPIO
-//IMAGE_URL         http://www.seeedstudio.com/wiki/images/thumb/c/c0/Magnetic_Switch.jpg/400px-Magnetic_Switch.jpg
+//IMAGE_URL         http://www.seeedstudio.com/wiki/images/b/b4/Generic_analog_output.png
 
-class GroveMagneticSwitch
+
+class GenericPWMOut
 {
 public:
-    GroveMagneticSwitch(int pin);
+    GenericPWMOut(int pin);
     
     /**
-     * Read the status if a magnet is approaching the sensor.
+     * Output a PWM wave on specified IO. The default frequency is 1K Hz.
      * 
-     * @param approach - 1: magnet approached 0: not
+     * @param duty_percent - 0.0~100.0, float number
      * 
      * @return bool 
      */
-    bool read_approach(uint8_t *mag_approach);
+    bool write_pwm(float duty_percent);
     
     /**
-     * Event data is the number of the PIN to which the grove is attached
+     * Output a PWM wave on speicfied IO with specified frequency.
      * 
-     * @param reporter 
+     * @param duty_percent - 0.0~100.0, float number
+     * @param freq - unit: Hz
      * 
-     * @return EVENT_T* 
+     * @return bool 
      */
-    EVENT_T * attach_event_reporter_for_mag_approached(EVENT_CALLBACK_T reporter);
-    EVENT_T *event;
-    IO_T *io;
-    uint32_t time;
+    bool write_pwm_with_freq(float duty_percent, uint32_t freq);
+    
+    /**
+     * Read back the parameters of PWM.
+     * 
+     * @param duty_percent - 0.0~100.0, float number
+     * @param freq - unit: Hz
+     * 
+     * @return bool 
+     */
+    bool read_pwm(float *duty_percent, uint32_t *freq);
+    
+    
+private:
+    PWM_T *io;
+    uint32_t _freq;
+    float _percent;
 };
 
-static void mag_approach_interrupt_handler(void *para);
 
 #endif

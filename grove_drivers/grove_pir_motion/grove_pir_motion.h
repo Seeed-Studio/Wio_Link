@@ -51,7 +51,14 @@ public:
      */
     bool read_approach(uint8_t *approach);
 
-    EVENT_T * attach_event_reporter_for_ir_approached(CALLBACK_T reporter);
+    /**
+     * Event data is the number of the PIN to which the grove is attached
+     * 
+     * @param reporter 
+     * 
+     * @return EVENT_T* 
+     */
+    EVENT_T * attach_event_reporter_for_ir_approached(EVENT_CALLBACK_T reporter);
     EVENT_T *event;
     IO_T *io;
     uint32_t time;

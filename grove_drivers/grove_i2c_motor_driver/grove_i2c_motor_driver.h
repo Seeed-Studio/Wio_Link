@@ -35,7 +35,7 @@
 //GROVE_NAME        "Grove-I2C Motor Driver"
 //SKU               105020001
 //IF_TYPE           I2C
-//IMAGE_URL         http://www.seeedstudio.com/depot/bmz_cache/a/af1f380a7d22dd28ef29d1af21475b38.image.164x123.jpg
+//IMAGE_URL         http://www.seeedstudio.com/depot/bmz_cache/3/3ac50a997c78858b8f960475f878e369.image.530x397.jpg
 
 #define MotorSpeedSet             0x82
 #define PWMFrequenceSet           0x84

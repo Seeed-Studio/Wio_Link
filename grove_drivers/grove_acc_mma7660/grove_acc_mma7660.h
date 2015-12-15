@@ -68,6 +68,10 @@ class GroveAccMMA7660
 {
 public:
     GroveAccMMA7660(int pinsda, int pinscl);
+    
+    bool on_power_on();
+    bool on_power_off();
+    
 
     /**
      * read the acceleration in unit g
@@ -92,6 +96,7 @@ public:
 
 //private:
     I2C_T *i2c;
+    bool power_on = true;
 
     void _setmode(uint8_t mode);
     void _setsamplerate(uint8_t rate);

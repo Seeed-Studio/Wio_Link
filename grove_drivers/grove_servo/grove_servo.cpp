@@ -33,17 +33,42 @@
 GroveServo::GroveServo(int pin)
 {
     this->io = (PWM_T *)malloc(sizeof(PWM_T));
+    this->timer = (TIMER_T *)malloc(sizeof(TIMER_T));
 
     suli_pwm_init(this->io, pin);
     suli_pwm_frequency(this->io, 50);
     //suli_pin_write(this->io, SULI_LOW);
+    
 }
 
 
 
 bool GroveServo::write_angle(int degree)
 {
-    float percent = 0.09 * degree / 180 + 0.025;
+    degree = constrain(degree, 20, 160);
+    float percent = 10 * degree / 180 + 2.5;
+    suli_pwm_frequency(this->io, 50);
     suli_pwm_output(this->io, percent);
     return true;
 }
+
+bool GroveServo::write_angle_motion_in_seconds(int degree, int seconds)
+{
+    degree = constrain(degree, 20, 160);
+    float percent = 10 * degree / 180 + 2.5;
+    suli_pwm_frequency(this->io, 50);
+    suli_pwm_output(this->io, percent);
+    
+    suli_timer_install(timer, seconds * 1000000, grove_servo_timer_interrupt_handler, this, false);
+    
+    return true;
+}
+
+
+static void grove_servo_timer_interrupt_handler(void *para)
+{
+    GroveServo *g = (GroveServo *)para;
+    suli_pwm_output(g->io, 0);
+}
+
+

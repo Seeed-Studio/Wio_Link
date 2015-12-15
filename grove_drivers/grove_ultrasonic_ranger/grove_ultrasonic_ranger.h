@@ -1,5 +1,5 @@
 /*
- * grove_magnetic_switch.h
+ * grove_ultrasonic_ranger.h
  *
  * Copyright (c) 2012 seeed technology inc.
  * Website    : www.seeed.cc
@@ -27,43 +27,42 @@
  */
 
 
-#ifndef __GROVE_MAGNETIC_SWITCH_H__
-#define __GROVE_MAGNETIC_SWITCH_H__
+#ifndef __GROVE_ULTRA_RANGER_H__
+#define __GROVE_ULTRA_RANGER_H__
 
 #include "suli2.h"
 
-//GROVE_NAME        "Grove-Magnetic Switch"
-//SKU               101020038
+//GROVE_NAME        "Grove - Ultrasonic Ranger"
+//SKU               101020010
 //IF_TYPE           GPIO
-//IMAGE_URL         http://www.seeedstudio.com/wiki/images/thumb/c/c0/Magnetic_Switch.jpg/400px-Magnetic_Switch.jpg
+//IMAGE_URL         http://www.seeedstudio.com/wiki/images/thumb/3/3a/Ultrasonic_Ranger.jpg/350px-Ultrasonic_Ranger.jpg
 
-class GroveMagneticSwitch
+class GroveUltraRanger
 {
 public:
-    GroveMagneticSwitch(int pin);
+    GroveUltraRanger(int pin);
     
     /**
-     * Read the status if a magnet is approaching the sensor.
+     * Get the range / distance between sensor and object.
      * 
-     * @param approach - 1: magnet approached 0: not
+     * @param range_cm - unit: cm
      * 
      * @return bool 
      */
-    bool read_approach(uint8_t *mag_approach);
+    bool read_range_in_cm(float *range_cm);
     
     /**
-     * Event data is the number of the PIN to which the grove is attached
+     * Get the range / distance between sensor and object.
      * 
-     * @param reporter 
+     * @param range_cm - unit: inch
      * 
-     * @return EVENT_T* 
+     * @return bool 
      */
-    EVENT_T * attach_event_reporter_for_mag_approached(EVENT_CALLBACK_T reporter);
-    EVENT_T *event;
+    bool read_range_in_inch(float *range_inch);
     IO_T *io;
-    uint32_t time;
+    
+private:
+    uint32_t _get_pulse_width();
 };
-
-static void mag_approach_interrupt_handler(void *para);
 
 #endif

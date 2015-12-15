@@ -31,13 +31,17 @@
 
 
 
-GroveExample::GroveExample(int pinsda, int pinscl)
+GroveExample::GroveExample(int pin)
 {
-    this->i2c = (I2C_T *)malloc(sizeof(I2C_T));
-    this->pin = (IO_T *)malloc(sizeof(IO_T));
+    this->io = (IO_T *)malloc(sizeof(IO_T));
+    this->timer = (TIMER_T *)malloc(sizeof(TIMER_T));
+    this->timer1 = (TIMER_T *)malloc(sizeof(TIMER_T));
 
-    suli_i2c_init(i2c, pinsda, pinscl);
-    suli_pin_init(pin, 13, SULI_INPUT);
+    //suli_i2c_init(i2c, pinsda, pinscl);
+    suli_pin_init(io, pin, SULI_INPUT);
+    
+    suli_timer_install(timer,  1000000, timer_handler, this, true);
+    suli_timer_install(timer1, 1500000, timer1_handler, this, false);
 }
 
 bool GroveExample::read_temp(int *temp)
@@ -98,13 +102,13 @@ bool GroveExample::write_multi_value(int a, float b, uint32_t c)
 }
 
 
-EVENT_T * GroveExample::attach_event_reporter_for_fire(CALLBACK_T reporter)
+EVENT_T * GroveExample::attach_event_reporter_for_fire(EVENT_CALLBACK_T reporter)
 {
     this->event1 = (EVENT_T *)malloc(sizeof(EVENT_T));
 
     suli_event_init(event1, reporter, NULL);
 
-    suli_pin_attach_interrupt_handler(pin, &pin_interrupt_handler, SULI_RISE, this);
+    suli_pin_attach_interrupt_handler(io, &pin_interrupt_handler, SULI_RISE, this);
 
     return this->event1;
 }
@@ -118,5 +122,36 @@ static void pin_interrupt_handler(void *para)
 {
     GroveExample *g = (GroveExample *)para;
 
-    suli_event_trigger(g->event1, *(g->pin));
+    suli_event_trigger(g->event1, (void *)(g->io), SULI_EDT_INT);
+    
+    g->var = 0;
+    
+    //suli_timer_remove(g->timer);
+    //suli_timer_install(g->timer, 1000000, timer_handler, g, true);
+    suli_timer_control_interval(g->timer, 2000000);
+    suli_timer_control_interval(g->timer1, 2000000);
 }
+
+static void timer_handler(void *para)
+{
+    GroveExample *g = (GroveExample *)para;
+    
+    g->var++;
+    
+    digitalWrite(SWITCH_GROVE_POWER, ~digitalRead(SWITCH_GROVE_POWER));
+    
+    //Serial1.printf("example var: %d\r\n", g->var);
+}
+
+static void timer1_handler(void *para)
+{
+    GroveExample *g = (GroveExample *)para;
+    
+    g->var++;
+    
+    //Serial1.printf("example var 1: %d\r\n", g->var);
+}
+
+
+
+

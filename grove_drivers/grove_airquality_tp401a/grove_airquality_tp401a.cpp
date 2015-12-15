@@ -36,6 +36,16 @@ GroveAirquality::GroveAirquality(int pin)
     inited_time = suli_millis();
 }
 
+bool GroveAirquality::on_power_on()
+{
+    inited_time = suli_millis();
+    return true;
+}
+
+bool GroveAirquality::on_power_off()
+{
+    return false;  //Air quality sensor will pull down VCC when power up, that will cause the system reboot unexpectedly.
+}
 
 bool GroveAirquality::read_quality(int *quality)
 {        

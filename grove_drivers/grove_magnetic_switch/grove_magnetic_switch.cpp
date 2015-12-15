@@ -47,7 +47,7 @@ bool GroveMagneticSwitch::read_approach(uint8_t *mag_approach)
 }
 
 
-EVENT_T * GroveMagneticSwitch::attach_event_reporter_for_mag_approached(CALLBACK_T reporter)
+EVENT_T * GroveMagneticSwitch::attach_event_reporter_for_mag_approached(EVENT_CALLBACK_T reporter)
 {
     this->event = (EVENT_T *)malloc(sizeof(EVENT_T));
 
@@ -67,5 +67,5 @@ static void mag_approach_interrupt_handler(void *para)
         return;
     }
     g->time = millis();
-    suli_event_trigger(g->event, *(g->io));
+    suli_event_trigger(g->event, (void *)(g->io), SULI_EDT_INT);
 }
