@@ -1,0 +1,628 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>API Reference - Wio Link</title>
+
+    <link href="stylesheets/screen.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="stylesheets/print.css" rel="stylesheet" type="text/css" media="print" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+      <script src="javascripts/all.js" type="text/javascript"></script>
+
+  </head>
+
+  <body class="index">
+    <a href="#" id="nav-button">
+      <span>
+        NAV
+        <img src="images/navbar.png" />
+      </span>
+    </a>
+    <div class="tocify-wrapper">
+      <img src="images/logo.png" />
+        <div class="search">
+          <input type="text" class="search" id="input-search" placeholder="Search">
+        </div>
+        <ul class="search-results"></ul>
+      <div id="toc">
+      </div>
+    </div>
+    <div class="page-wrapper">
+      <div class="dark-box"></div>
+      <div class="content">
+        <h1 id="preface">Preface</h1>
+
+<h2 id="about-tokens">About tokens</h2>
+
+<p>There&rsquo;re two kinds of tokens: user token and node token. </p>
+
+<p>And there will be a specification under each category of APIs. Please access the API endpoint with the right token, or you will get a 403 HTTP status code and a error message.</p>
+
+<h2 id="authorization">Authorization</h2>
+
+<ul>
+<li>with query string: xxxx/xxxx?access_token=[your token here]</li>
+<li>with &ldquo;Authorization&rdquo; header: Authorization: token [your token here]</li>
+</ul>
+
+<h2 id="status-code-and-format-of-the-response">Status code and format of the response</h2>
+
+<blockquote>
+<p>GET request succeed:</p>
+</blockquote>
+<pre class="highlight json"><code><span class="p">{</span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"value"</span><span class="p">,</span><span class="w"> </span><span class="nt">"key2"</span><span class="p">:</span><span class="w"> </span><span class="s2">"value2"</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<blockquote>
+<p>POST request succeed:</p>
+</blockquote>
+<pre class="highlight json"><code><span class="p">{</span><span class="nt">"result"</span><span class="p">:</span><span class="s2">"ok"</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<blockquote>
+<p>All other error responses:</p>
+</blockquote>
+<pre class="highlight json"><code><span class="p">{</span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error message here"</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<table><thead>
+<tr>
+<th>Status Code</th>
+<th>Meaning</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>200</td>
+<td>OK - API call successfully executed.</td>
+</tr>
+<tr>
+<td>400</td>
+<td>Bad Request - Wrong Grove/method searching path provided, or wrong parameter for method provided</td>
+</tr>
+<tr>
+<td>403</td>
+<td>Forbidden - Your access token is not authorized.</td>
+</tr>
+<tr>
+<td>404</td>
+<td>Not Found - The device you requested is not currently online, or the resource/endpoint you requested does not exist.</td>
+</tr>
+<tr>
+<td>408</td>
+<td>Timed Out - The server can not communicate with device in a specified time out period.</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Server errors - It&rsquo;s usually caused by the unexpected errors of our side.</td>
+</tr>
+</tbody></table>
+
+<p>If the debug mode is enabled, the error message will also include a field &ldquo;traceback&rdquo; whose value is the traceback of the error.</p>
+
+<h1 id="user-management-apis">User management APIs</h1>
+
+<h2 id="create-a-user-account">Create a user account</h2>
+<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>email here] -d <span class="nv">password</span><span class="o">=[</span>password here] https://iot.seeed.cc/v1/user/create
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"JLvvpkpmyMWQCOqUqPd5e4wR2f7wxM7fDmenWuxrcLs"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">POST /v1/user/create</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>email</td>
+<td>string</td>
+<td>The email address</td>
+</tr>
+<tr>
+<td>password</td>
+<td>string</td>
+<td>The password</td>
+</tr>
+</tbody></table>
+
+<aside class="notice">
+Note: All the illustrated responses are the succeeded one, the error response is always {“error”: “error message here”} and the HTTP status code.
+</aside>
+
+<h2 id="change-the-password">Change the password</h2>
+<pre class="highlight shell"><code>curl -d <span class="nv">password</span><span class="o">=[</span>new password here] https://iot.seeed.cc/v1/user/changepassword?access_token<span class="o">=</span>9L0_ofzPHnan91UQbtcCS4KzCI8BGQk6-OgMOtmnI3Q
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">POST /v1/user/changepassword</code></p>
+
+<aside class="notice">
+Require: User token
+</aside>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>password</td>
+<td>string</td>
+<td>The new password</td>
+</tr>
+</tbody></table>
+
+<h2 id="retreive-the-password">Retreive the password</h2>
+<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>new email here] https://iot.seeed.cc/v1/user/retrievepassword
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p>If you forget your password, you can retrieve it by this API. You should specify the right email address, otherwise you will not receive the email with new password attached.</p>
+
+<p><code class="prettyprint">POST /v1/user/retrievepassword</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>email</td>
+<td>string</td>
+<td>The email address of which account you want to retrieve password for</td>
+</tr>
+</tbody></table>
+
+<h2 id="user-login">User login</h2>
+<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>email here] -d <span class="nv">password</span><span class="o">=[</span>password here] https://iot.seeed.cc/v1/user/login
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"JLvvpkpmyMWQCOqUqPd5e4wR2f7wxM7fDmenWuxrcLs"</span><span class="p">,</span><span class="w">
+    </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="mi">21</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">POST /v1/user/login</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>email</td>
+<td>string</td>
+<td>The email address</td>
+</tr>
+<tr>
+<td>password</td>
+<td>string</td>
+<td>The password</td>
+</tr>
+</tbody></table>
+
+<h1 id="nodes-management-apis">Nodes management APIs</h1>
+
+<aside class="notice">
+All require: User token
+</aside>
+
+<h2 id="create-a-node">Create a node</h2>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> -d <span class="nv">name</span><span class="o">=</span>node_1  https://iot.seeed.cc/v1/nodes/create
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"e3d3b0fe920ddc3c69393fdbf83a2114"</span><span class="p">,</span><span class="w"> 
+    </span><span class="nt">"node_sn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"819554bd9519c94a19cc7fbd32447118"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">POST /v1/nodes/create</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>The name for the new node</td>
+</tr>
+</tbody></table>
+
+<h2 id="list-all-nodes-of-a-user">List all nodes of a user</h2>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://iot.seeed.cc/v1/nodes/list
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"nodes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"e3d3b0fe920ddc3c69393fdbf83a2114"</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"dataxserver"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"online"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"weird name"</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"node_sn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"819554bd9519c94a19cc7fbd32447118"</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"e3da3a2114asdfo9713801adfkjdhfa"</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"dataxserver"</span><span class="p">:</span><span class="w"> </span><span class="s2">"192.168.31.2"</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"online"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"nice name"</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"node_sn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1242309jdfjk98087qejljdflkajdsf98"</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">GET /v1/nodes/list</code></p>
+
+<h2 id="rename-a-node">Rename a node</h2>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://iot.seeed.cc/v1/nodes/rename -d <span class="nv">node_sn</span><span class="o">=</span>160769ffa50feae76ec6f7a4fb95bf6c -d <span class="nv">name</span><span class="o">=</span>new_name
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">POST /v1/nodes/rename</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>node_sn</td>
+<td>string</td>
+<td>The SN of this node, get the SN with nodes/list API</td>
+</tr>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>The new name for this node</td>
+</tr>
+</tbody></table>
+
+<h2 id="delete-a-node">Delete a node</h2>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token StiLU1g5SNfQYWQLKpB7uMuE4l2uQuamKMBsIW1RGgA"</span> https://iot.seeed.cc/v1/nodes/delete -d <span class="s2">"node_sn=bac0df2d1b01b32c8ad3a0efbfc31c5f"</span>
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">POST /v1/nodes/delete</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>node_sn</td>
+<td>string</td>
+<td>The SN of this node, get the SN with nodes/list API</td>
+</tr>
+</tbody></table>
+
+<h1 id="grove-driver-apis">Grove driver APIs</h1>
+
+<aside class="notice">
+All require: User token
+</aside>
+
+<h2 id="get-all-grove-drivers-39-information">Get all grove drivers&rsquo; information</h2>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span>  https://iot.seeed.cc/v1/scan/drivers
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+  </span><span class="nt">"drivers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+    </span><span class="p">{</span><span class="w">
+      </span><span class="nt">"SKU"</span><span class="p">:</span><span class="w"> </span><span class="s2">"104030003"</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"Files"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">"grove_4_digit.cpp"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"grove_4_digit.h"</span><span class="w">
+      </span><span class="p">],</span><span class="w">
+      </span><span class="nt">"ClassFile"</span><span class="p">:</span><span class="w"> </span><span class="s2">"grove_4_digit.h"</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"GroveName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Grove - 4-Digit Display"</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"ImageURL"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://www.seeedstudio.com/depot/bmz_cache/3/3a9f79323a82950c12fc7e69fa9fab4d.image.530x397.jpg"</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"Writes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+        </span><span class="nt">"write_display_point"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nt">"Arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">[</span><span class="w">
+              </span><span class="s2">"uint8_t"</span><span class="p">,</span><span class="w">
+              </span><span class="s2">"display"</span><span class="w">
+            </span><span class="p">]</span><span class="w">
+          </span><span class="p">]</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="nt">"write_display_digits"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nt">"Arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">[</span><span class="w">
+              </span><span class="s2">"uint8_t"</span><span class="p">,</span><span class="w">
+              </span><span class="s2">"start_pos"</span><span class="w">
+            </span><span class="p">],</span><span class="w">
+            </span><span class="p">[</span><span class="w">
+              </span><span class="s2">"char *"</span><span class="p">,</span><span class="w">
+              </span><span class="s2">"chars"</span><span class="w">
+            </span><span class="p">]</span><span class="w">
+          </span><span class="p">]</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="nt">"write_clear"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nt">"Arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="nt">"write_display_one_digit"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nt">"Arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">[</span><span class="w">
+              </span><span class="s2">"uint8_t"</span><span class="p">,</span><span class="w">
+              </span><span class="s2">"position"</span><span class="w">
+            </span><span class="p">],</span><span class="w">
+            </span><span class="p">[</span><span class="w">
+              </span><span class="s2">"char *"</span><span class="p">,</span><span class="w">
+              </span><span class="s2">"chr"</span><span class="w">
+            </span><span class="p">]</span><span class="w">
+          </span><span class="p">]</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="nt">"write_brightness"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+          </span><span class="nt">"Arguments"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+            </span><span class="p">[</span><span class="w">
+              </span><span class="s2">"uint8_t"</span><span class="p">,</span><span class="w">
+              </span><span class="s2">"brightness"</span><span class="w">
+            </span><span class="p">]</span><span class="w">
+          </span><span class="p">]</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+      </span><span class="p">},</span><span class="w">
+      </span><span class="nt">"HasPowerOffFunc"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"ClassName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Grove4Digit"</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"Reads"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span><span class="w">
+      </span><span class="nt">"CanGetLastError"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"Events"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span><span class="w">
+      </span><span class="nt">"HasEvent"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"InterfaceType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UART"</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"IncludePath"</span><span class="p">:</span><span class="w"> </span><span class="s2">"./grove_drivers/grove_4_digit"</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"HasPowerOnFunc"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"ID"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+      </span><span class="nt">"ConstructArgList"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="s2">"int pintx"</span><span class="p">,</span><span class="w">
+        </span><span class="s2">"int pinrx"</span><span class="w">
+      </span><span class="p">]</span><span class="w">
+    </span><span class="p">}</span><span class="w">
+  </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">GET /v1/scan/drivers</code></p>
+
+<h2 id="get-the-status-of-last-driver-scanning">Get the status of last driver scanning</h2>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span>  https://iot.seeed.cc/v1/scan/status
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+  </span><span class="nt">"msg"</span><span class="p">:</span><span class="w"> </span><span class="s2">"scanned 40 grove drivers at 2015-12-25 15:22:10.796713"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+  </span><span class="nt">"msg"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error message here"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Failed"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">GET /v1/scan/status</code></p>
+
+<h1 id="boards-platform-apis">Boards/Platform APIs</h1>
+
+<aside class="notice">
+All require: User token
+</aside>
+
+<h2 id="list-all-supported-boards">List all supported boards</h2>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://iot.seeed.cc/v1/boards/list
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"boards"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nt">"board_flash_spi_mode"</span><span class="p">:</span><span class="w"> </span><span class="s2">"QIO"</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"board_builtin"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                </span><span class="nt">"FUNCTION_KEY"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w">
+                </span><span class="nt">"STATUS_LED"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
+                </span><span class="nt">"GROVE_POWER_SWITCH"</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="w">
+            </span><span class="p">},</span><span class="w">
+            </span><span class="nt">"interfaces"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                </span><span class="nt">"UART0"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                    </span><span class="nt">"pintx"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+                    </span><span class="nt">"pinrx"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
+                    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UART"</span><span class="w">
+                </span><span class="p">},</span><span class="w">
+                </span><span class="nt">"D2"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GPIO"</span><span class="p">,</span><span class="w">
+                    </span><span class="nt">"pin"</span><span class="p">:</span><span class="w"> </span><span class="mi">13</span><span class="w">
+                </span><span class="p">},</span><span class="w">
+                </span><span class="nt">"A0"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ANALOG"</span><span class="p">,</span><span class="w">
+                    </span><span class="nt">"pin"</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="w">
+                </span><span class="p">},</span><span class="w">
+                </span><span class="nt">"I2C0"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                    </span><span class="nt">"pinscl"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w">
+                    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"I2C"</span><span class="p">,</span><span class="w">
+                    </span><span class="nt">"pinsda"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="w">
+                </span><span class="p">},</span><span class="w">
+                </span><span class="nt">"D0"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GPIO"</span><span class="p">,</span><span class="w">
+                    </span><span class="nt">"pin"</span><span class="p">:</span><span class="w"> </span><span class="mi">14</span><span class="w">
+                </span><span class="p">},</span><span class="w">
+                </span><span class="nt">"D1"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+                    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GPIO"</span><span class="p">,</span><span class="w">
+                    </span><span class="nt">"pin"</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="w">
+                </span><span class="p">}</span><span class="w">
+            </span><span class="p">},</span><span class="w">
+            </span><span class="nt">"board_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Wio Link v1.0"</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"board_flash_map"</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"board_vendor"</span><span class="p">:</span><span class="w"> </span><span class="s2">"seeedstudio"</span><span class="p">,</span><span class="w">
+            </span><span class="nt">"board_flash_spi_speed"</span><span class="p">:</span><span class="w"> </span><span class="mi">40</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">GET /v1/boards/list</code></p>
+
+<h1 id="single-node-apis">Single node APIs</h1>
+
+<aside class="notice">
+All require: Node token
+</aside>
+
+<h2 id="print-the-well-known-of-a-node">Print the well-known of a node</h2>
+
+<blockquote>
+<p>Access through Data Exchange Server</p>
+</blockquote>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/.well-known
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="nt">"msg"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+</span><span class="s2">"GET /v1/node/GroveAccMMA7660/accelerometer -&gt; float ax, float ay, float az"</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"GET /v1/node/Grove_Example1/with_arg/int_arg -&gt; float cx, float cy, float cz, int degree"</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"POST /v1/node/Grove_Example1/float_value &lt;- float f"</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"HasEvent Grove_Button1 button_pressed"</span><span class="p">,</span><span class="w"> 
+</span><span class="s2">"POST /v1/node/Grove_Gyro_ITG3200/zerocalibrate &lt;- void"</span><span class="p">]}</span><span class="w">
+</span></code></pre>
+
+<p><code class="prettyprint">GET /v1/node/.well-known</code></p>
+
+<p>&ldquo;.well-known&rdquo; API prints all the available resources on that node. This API needs the node online.</p>
+
+<p>The items on the right of the right arrow &ldquo;-&gt;&rdquo; are the properties that you can read via that API call, while the items on the right of the left arrow &ldquo;&lt;-&rdquo; are the values that you can write to that method/action.</p>
+
+<p>&ldquo;HasEvent&rdquo; keyword indicates that there&rsquo;s a particular event which will be reported by that grove module, you can receive an explicit semantic event message from the event reporting websocket, e.g. {u&#39;msg&rsquo;: {u&#39;button_pressed&rsquo;: u&#39;0&rsquo;}} which means the button attached to GPIO0 is pressed.</p>
+
+<h2 id="read-the-property-of-a-grove-module">Read the property of a Grove module</h2>
+
+<blockquote>
+<p>Access through Data Exchange Server</p>
+</blockquote>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/Grove_Example1/temp
+</code></pre>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/Grove_Example1/with_argument/90
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"temp"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"cz"</span><span class="p">:</span><span class="w"> </span><span class="mf">78.0</span><span class="p">,</span><span class="w"> 
+    </span><span class="nt">"cy"</span><span class="p">:</span><span class="w"> </span><span class="mf">45.6</span><span class="p">,</span><span class="w"> 
+    </span><span class="nt">"cx"</span><span class="p">:</span><span class="w"> </span><span class="mf">12.3</span><span class="p">,</span><span class="w"> 
+    </span><span class="nt">"degree"</span><span class="p">:</span><span class="w"> </span><span class="mi">90</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p>Read a specified property of a specified grove instance on that node, returns the json expression of the property.</p>
+
+<p>Note: Get to know the type of arguments with .well-known API output</p>
+
+<p><code class="prettyprint">GET /v1/node/GroveInstanceName/Property/[Arg1[/arg2]]</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>GroveInstanceName</td>
+<td>string</td>
+<td>The instance name of the connected grove module, this is generated.</td>
+</tr>
+<tr>
+<td>Property name</td>
+<td>string</td>
+<td>The readable property name of this module, get to know by the output of well-known API.</td>
+</tr>
+<tr>
+<td>Argx</td>
+<td>string, number</td>
+<td>The arguments for the read function of the driver, the count of the arguments is not fixed, depending on the signature of the function.</td>
+</tr>
+</tbody></table>
+
+<aside class="warning">
+The parameters are location sensitive. They must follow the order of what the well-known output shows.
+</aside>
+
+<h2 id="write-to-a-grove-module">Write to a Grove module</h2>
+
+<blockquote>
+<p>Access through Data Exchange Server</p>
+</blockquote>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/Grove_Example1/float_value/10.5
+</code></pre>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/Grove_Example1/multi_value/10/10.5/445566
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p>Write or set the value to a specified property/method/action of a specified grove instance on that node. By writting, you can pass data down to the grove hardware ,or trigger an action, or do some configuration onto the hardware.</p>
+
+<p>Note: Get to know the type of arguments with .well-known API output</p>
+
+<p><code class="prettyprint">POST /v1/node/GroveInstanceName/Property-or-Method-or-Action/[Arg1[/arg2]]</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>GroveInstanceName</td>
+<td>string</td>
+<td>The instance name of the connected grove module, this is generated.</td>
+</tr>
+<tr>
+<td>Property-or-Method-or-Action</td>
+<td>string</td>
+<td>The writable property name / action / method of this module, get to know by the output of well-known API.</td>
+</tr>
+<tr>
+<td>Argx</td>
+<td>string, number</td>
+<td>The arguments for the write function of the driver, the count of the arguments is not fixed, depending on the signature of the function.</td>
+</tr>
+</tbody></table>
+
+<aside class="warning">
+The parameters are location sensitive. They must follow the order of what the well-known output shows.
+</aside>
+
+      </div>
+      <div class="dark-box">
+      </div>
+    </div>
+  </body>
+</html>
