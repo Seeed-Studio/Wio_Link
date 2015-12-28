@@ -657,7 +657,7 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through OTA Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> -H <span class="s2">"Content-Type: application/json"</span>  https://iot.seeed.cc/v1/user/download -d <span class="s1">'{"board_name": "Wio Link v1.0", "connections":[{"port":"UART0", "sku":"111020001"},{"port":"I2C0", "sku":"101020050"}]}'</span>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> -H <span class="s2">"Content-Type: application/json"</span>  https://iot.seeed.cc/v1/ota/trigger -d <span class="s1">'{"board_name": "Wio Link v1.0", "connections":[{"port":"UART0", "sku":"111020001"},{"port":"I2C0", "sku":"101020050"}]}'</span>
 </code></pre>
 
 <blockquote>
@@ -691,7 +691,7 @@ The parameters are location sensitive. They must follow the order of what the we
 
 <p>If the OTA has been executed, a response with &ldquo;ota_status&rdquo; field will be returned. This is the first status of the OTA process - &ldquo;Building the firmware&rdquo;. Then you can poll the &ldquo;/v1/ota/status&rdquo; API to track the OTA states.</p>
 
-<p><code class="prettyprint">POST /v1/user/download</code></p>
+<p><code class="prettyprint">POST /v1/ota/trigger</code></p>
 
 <h2 id="track-the-ota-status">Track the OTA status</h2>
 
