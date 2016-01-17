@@ -40,6 +40,10 @@
 
 <p>And there will be a specification under each category of APIs. Please access the API endpoint with the right token, or you will get a 403 HTTP status code and a error message.</p>
 
+<p>The user token can be obtained with /v1/user/create, /v1/user/changepassword, /v1/user/login API endpoints.</p>
+
+<p>The node token can be obtained with /v1/nodes/create, /v1/nodes/list API endpoints, it&rsquo;s the value of &ldquo;node_key&rdquo; in the response.</p>
+
 <h2 id="authorization">Authorization</h2>
 
 <ul>
@@ -251,6 +255,25 @@ All require: User token
 </tr>
 </tbody></table>
 
+<table><thead>
+<tr>
+<th>Fields of response</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>node_key</td>
+<td>string</td>
+<td>The node token</td>
+</tr>
+<tr>
+<td>node_sn</td>
+<td>string</td>
+<td>The series number of this node</td>
+</tr>
+</tbody></table>
+
 <h2 id="list-all-nodes-of-a-user">List all nodes of a user</h2>
 <pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://iot.seeed.cc/v1/nodes/list
 </code></pre>
@@ -274,11 +297,43 @@ All require: User token
 </span><span class="p">}</span><span class="w">
 </span></code></pre>
 
-<p>The &ldquo;dataxserver&rdquo; is the data exchange server which is one of the two channels Wio Link talks with server(s). See https://github.com/Seeed-Studio/Wio_Link/wiki/Server%20Deployment%20Guide#3-deploy-a-local-lean-data-exchange-server for more detail. The default data exchange server is the same as OTA server when the node is created, and will be displayed &ldquo;null&rdquo; here. If set by API /v1/node/setting/dataxserver, the set address will be stored in database and will be displayed here. </p>
-
-<p>The &ldquo;online&rdquo; fields stands for the connection status of the data channel. When one node has connected to a data exchange server, it will also sync the status with OTA server, then the OTA server will dispatch the status through this API.</p>
+<p>List all the nodes belong to a specific user, corresponding with the user token provided.</p>
 
 <p><code class="prettyprint">GET /v1/nodes/list</code></p>
+
+<table><thead>
+<tr>
+<th>Fields of response</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>name</td>
+<td>string</td>
+<td>The name of this node</td>
+</tr>
+<tr>
+<td>node_key</td>
+<td>string</td>
+<td>The node token</td>
+</tr>
+<tr>
+<td>node_sn</td>
+<td>string</td>
+<td>The series number of this node</td>
+</tr>
+<tr>
+<td>dataxserver</td>
+<td>string</td>
+<td>The &ldquo;dataxserver&rdquo; is the data exchange server which is one of the two channels Wio Link talks with server(s). See https://github.com/Seeed-Studio/Wio_Link/wiki/Server%20Deployment%20Guide#3-deploy-a-local-lean-data-exchange-server for more detail. The default data exchange server is the same as OTA server when the node is created, and will be displayed &ldquo;null&rdquo; here. If set by API /v1/node/setting/dataxserver, the set address will be stored in database and will be displayed here.</td>
+</tr>
+<tr>
+<td>online</td>
+<td>string</td>
+<td>The &ldquo;online&rdquo; fields stands for the connection status of the data channel. When one node has connected to a data exchange server, it will also sync the status with OTA server, then the OTA server will dispatch the status through this API.</td>
+</tr>
+</tbody></table>
 
 <h2 id="rename-a-node">Rename a node</h2>
 <pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://iot.seeed.cc/v1/nodes/rename -d <span class="nv">node_sn</span><span class="o">=</span>160769ffa50feae76ec6f7a4fb95bf6c -d <span class="nv">name</span><span class="o">=</span>new_name
