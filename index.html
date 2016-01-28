@@ -748,6 +748,41 @@ The parameters are location sensitive. They must follow the order of what the we
 
 <p><code class="prettyprint">POST /v1/ota/trigger</code></p>
 
+<p>The OTA process can also be split into two phases: </p>
+
+<ul>
+<li>Phase1 - Generate source files</li>
+<li>Phase2 - Build the firmware and transfer over the air to the node</li>
+</ul>
+
+<p>To specify the phase, you can pass a parameter <em>build_phase</em> in the URL.</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>build_phase</td>
+<td>number</td>
+<td>1 - Only do phase 1<br>2 - Only do phase 2<br>3 or without this parameter - Do two phases</td>
+</tr>
+</tbody></table>
+
+<blockquote>
+<p>Only phase 1</p>
+</blockquote>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Content-Type: application/json"</span>  https://iot.seeed.cc/v1/ota/trigger?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2&amp;build_phase<span class="o">=</span>1 -d <span class="s1">'{"board_name": "Wio Link v1.0", "connections":[{"port":"UART0", "sku":"111020001"},{"port":"I2C0", "sku":"101020050"}]}'</span>
+</code></pre>
+
+<blockquote>
+<p>Only phase 2 (Must pass phase 1 before)</p>
+</blockquote>
+<pre class="highlight shell"><code>curl -X POST https://iot.seeed.cc/v1/ota/trigger?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2&amp;build_phase<span class="o">=</span>2 
+</code></pre>
+
 <h2 id="track-the-ota-status">Track the OTA status</h2>
 
 <blockquote>
@@ -871,6 +906,207 @@ The parameters are location sensitive. They must follow the order of what the we
 </span></code></pre>
 
 <p>If you want to get the event from node at more real time, you can connect to the event reporting endpoint with WebSocket. After, send the Node Key to complete the handshake. Then, the <code class="prettyprint">onmessage</code> will get event data when node post it.</p>
+
+<h1 id="coding-on-the-fly">Coding on the fly</h1>
+
+<h2 id="user-39-s-logic-block">User&rsquo;s logic block</h2>
+
+<p>User&rsquo;s logic block (ULB) is a piece of c++ code which will be compiled into the firmware and run natively on Wio Link. One can modify the ULB between build phase 1 and build phase 2. The ULB has an Arduino style sketch which consists of setup and loop functions. The ULB will be uploaded onto the server and put into a build directory related to a particular node.</p>
+
+<aside class="notice">
+All require: Node token
+</aside>
+
+<blockquote>
+<p>Access through OTA Server</p>
+
+<p>Upload ULB:</p>
+</blockquote>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Content-Type: application/json"</span>  https://iot.seeed.cc/v1/cotf/project?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2 -d <span class="s1">'{
+  "./Main.h": "source code here",
+  "./Main.cpp": "source code here",
+  "./other_file.cpp": "source code here",
+  "./dir1/file1.h": "source code here"
+}'</span>
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<blockquote>
+<p>Download ULB:</p>
+</blockquote>
+<pre class="highlight shell"><code>curl https://iot.seeed.cc/v1/cotf/project?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+</code></pre>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+  </span><span class="nt">"./Main.h"</span><span class="p">:</span><span class="w"> </span><span class="s2">"source code here"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"./Main.cpp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"source code here"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"./other_file.cpp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"source code here"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"./dir1/file1.h"</span><span class="p">:</span><span class="w"> </span><span class="s2">"source code here"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<h2 id="program-ulb">Program ULB</h2>
+<pre class="highlight cpp"><code><span class="kt">uint32_t</span> <span class="n">time</span><span class="p">;</span>
+<span class="kt">void</span> <span class="nf">setup</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">millis</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">loop</span><span class="p">()</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">millis</span><span class="p">()</span> <span class="o">-</span> <span class="n">time</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">millis</span><span class="p">();</span>
+        <span class="c1">//do things here...
+</span>    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+
+<p>In the ULB, you can call the functions of all the grove modules selected in build phase 1. The grove modules selected in build phase 1 will expose read/write API endpoints and events congenitally. The event will be duplicated and be buffered in two event queue: the external event queue and the internal event queue. The events in external event queue will be dispatched to the event API (websocket). The events in internal event queue can be fetched by the ULB. Both queue has a depth of 100.</p>
+
+<p>In the ULB, you can also interact with outside with the following functionalities:</p>
+
+<ul>
+<li>Register a variable, read and write the value of it through API</li>
+<li>Register a function, call it through API</li>
+<li>Post events</li>
+</ul>
+
+<p>You should use delay very carefully because the watch dog will reset the Wio Link if delay more over 10ms. And the worst thing is that the Wio Link can never be OTAed if you programmed a bad ULB which causes the Wio Link reboot again and again. Once your Wio Link run into this situation, you can fix it with the guide of <a href="https://github.com/Seeed-Studio/Wio_Link/wiki/Advanced%20User%20Guide#5-repair-bricked-wio-link">this document</a>. We highly recommend use the time-point-check model to handle time.</p>
+
+<h2 id="variable">Variable</h2>
+
+<blockquote>
+<p>Register a variable</p>
+</blockquote>
+<pre class="highlight c"><code><span class="kt">int</span> <span class="n">var1</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span>
+<span class="kt">float</span> <span class="n">f</span> <span class="o">=</span> <span class="mi">123</span><span class="p">.</span><span class="mi">45</span><span class="p">;</span>
+<span class="n">String</span> <span class="n">s</span><span class="p">;</span>
+<span class="p">...</span>
+<span class="n">wio</span><span class="p">.</span><span class="n">registerVar</span><span class="p">(</span><span class="s">"var1"</span><span class="p">,</span> <span class="n">var1</span><span class="p">);</span>
+<span class="n">wio</span><span class="p">.</span><span class="n">registerVar</span><span class="p">(</span><span class="s">"var2"</span><span class="p">,</span> <span class="n">f</span><span class="p">);</span>
+<span class="n">wio</span><span class="p">.</span><span class="n">registerVar</span><span class="p">(</span><span class="s">"var3"</span><span class="p">,</span> <span class="n">s</span><span class="p">);</span>
+</code></pre>
+
+<blockquote>
+<p>Read a variable</p>
+
+<p>Access through Data Exchange Server</p>
+</blockquote>
+<pre class="highlight shell"><code>curl https://iot.seeed.cc/v1/node/variable/var1?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+</code></pre>
+
+<p>Data type supported:</p>
+
+<p>bool, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, const char *, String.</p>
+
+<p>All data types support reading.</p>
+
+<p>All data types support writing except for const char *  and String.</p>
+
+<p><code class="prettyprint">GET /v1/node/variable/{variable name}</code></p>
+
+<blockquote>
+<p>Write a variable</p>
+
+<p>Access through Data Exchange Server</p>
+</blockquote>
+<pre class="highlight shell"><code>curl -X POST https://iot.seeed.cc/v1/node/variable/var1/200?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+</code></pre>
+
+<p><code class="prettyprint">POST /v1/node/variable/{variable name}/{variable value}</code></p>
+
+<h2 id="function">Function</h2>
+
+<blockquote>
+<p>Register a function</p>
+</blockquote>
+<pre class="highlight c"><code><span class="kt">void</span> <span class="nf">myfunc</span><span class="p">(</span><span class="n">String</span> <span class="n">para</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">Serial1</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">para</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="p">...</span>
+<span class="n">wio</span><span class="p">.</span><span class="n">registerFunc</span><span class="p">(</span><span class="s">"func1"</span><span class="p">,</span> <span class="n">myfunc</span><span class="p">);</span>
+<span class="p">...</span>
+</code></pre>
+
+<blockquote>
+<p>Call a function</p>
+
+<p>Access through Data Exchange Server</p>
+</blockquote>
+<pre class="highlight shell"><code>curl -X POST https://iot.seeed.cc/v1/node/function/func1?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2 -d <span class="nv">arg</span><span class="o">=</span><span class="s2">"argument here"</span>
+</code></pre>
+
+<p>Only support one String type parameter.</p>
+
+<p><code class="prettyprint">POST /v1/node/function/{function name}</code></p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>arg</td>
+<td>string</td>
+<td>The argument for the registered function, POST should be sent in x-www-form-urlencoded format.</td>
+</tr>
+</tbody></table>
+
+<h2 id="read-events-from-connected-grove-modules">Read events from connected grove modules</h2>
+<pre class="highlight c"><code><span class="n">event_t</span> <span class="n">event</span><span class="p">;</span>
+<span class="p">...</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">wio</span><span class="p">.</span><span class="n">eventAvailable</span><span class="p">())</span>
+<span class="p">{</span>
+        <span class="n">wio</span><span class="p">.</span><span class="n">getEvent</span><span class="p">(</span><span class="o">&amp;</span><span class="n">event</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="n">event_name</span><span class="p">,</span> <span class="s">"encoder_position"</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="kt">int32_t</span> <span class="n">event_data</span> <span class="o">=</span> <span class="n">event</span><span class="p">.</span><span class="n">event_data</span><span class="p">.</span><span class="n">s32</span><span class="p">;</span>
+            <span class="n">Serial1</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">event_data</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="n">event_name</span><span class="p">,</span> <span class="s">"ir_recv_data_hex"</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">{</span>
+            <span class="kt">char</span> <span class="o">*</span><span class="n">event_data</span> <span class="o">=</span> <span class="n">event</span><span class="p">.</span><span class="n">event_data</span><span class="p">.</span><span class="n">p_str</span><span class="p">;</span>
+            <span class="n">Serial1</span><span class="p">.</span><span class="n">println</span><span class="p">(</span><span class="n">event_data</span><span class="p">);</span>
+        <span class="p">}</span>
+<span class="p">}</span>
+<span class="p">...</span>
+</code></pre>
+
+<blockquote>
+<p>To get the event data, you should read the correct item of the union:</p>
+</blockquote>
+<pre class="highlight c"><code><span class="k">union</span>
+<span class="p">{</span>
+    <span class="kt">uint8_t</span>         <span class="n">raw</span><span class="p">[</span><span class="mi">4</span><span class="p">];</span>
+    <span class="kt">uint8_t</span>         <span class="n">u8</span><span class="p">;</span>
+    <span class="kt">uint16_t</span>        <span class="n">u16</span><span class="p">;</span>
+    <span class="kt">uint32_t</span>        <span class="n">u32</span><span class="p">;</span>
+    <span class="n">bool</span>            <span class="n">boolean</span><span class="p">;</span>
+    <span class="kt">int8_t</span>          <span class="n">s8</span><span class="p">;</span>
+    <span class="kt">int16_t</span>         <span class="n">s16</span><span class="p">;</span>
+    <span class="kt">int32_t</span>         <span class="n">s32</span><span class="p">;</span>
+    <span class="kt">int</span>             <span class="n">integer</span><span class="p">;</span>
+    <span class="kt">float</span>           <span class="n">f</span><span class="p">;</span>
+    <span class="kt">char</span>            <span class="o">*</span><span class="n">p_str</span><span class="p">;</span>
+    <span class="kt">void</span>            <span class="o">*</span><span class="n">ptr</span><span class="p">;</span>
+<span class="p">}</span><span class="n">event_data</span><span class="p">;</span>
+</code></pre>
+
+<h2 id="post-events">Post events</h2>
+<pre class="highlight c"><code><span class="n">wio</span><span class="p">.</span><span class="n">postEvent</span><span class="p">(</span><span class="s">"my_event"</span><span class="p">,</span> <span class="n">event_data_var</span><span class="p">);</span>
+</code></pre>
+
+<p>Data types supported for event data:</p>
+
+<p>bool, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, float, const char *, String</p>
+
+<p>wio.postEvent() will post an event into external event queue, and then can be fetched with the <em>Node Event API (use Websocket)</em>.</p>
 
       </div>
       <div class="dark-box">
