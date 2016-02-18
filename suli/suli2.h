@@ -46,6 +46,15 @@
 
 
 /***************************************************************************
+ * Common util functions
+ ***************************************************************************/
+#ifndef constrain(amt,low,high)
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+#endif
+long suli_map(long x, long in_min, long in_max, long out_min, long out_max);
+
+
+/***************************************************************************
  * IO related APIs
  ***************************************************************************/
 //-------------- mbed ---------------
@@ -255,14 +264,14 @@ inline void suli_pwm_frequency(PWM_T *pwm, uint32_t hz)
 
 /**
  * void suli_pwm_output(PWM_T *, float percent) 
- * percent: 0.0 ~ 1.0f 
+ * percent: 0.0 ~ 100.0f 
  */
 inline void suli_pwm_output(PWM_T *pwm, float percent)
 {
 #ifdef ESP8266
-    int duty = constrain((int)(1023 * percent), 0, 1023);
+    int duty = constrain((int)(10.23 * percent), 0, 1023);
 #else
-    uint8_t duty = constrain((int)(255.0 * percent), 0, 255);
+    uint8_t duty = constrain((int)(2.55 * percent), 0, 255);
 #endif
     analogWrite(*pwm, duty);
 }
@@ -571,27 +580,138 @@ inline int suli_uart_readable(UART_T *uart)
 /***************************************************************************
  * Event related APIs
  ***************************************************************************/
-typedef void (*event_callback_t)(char *event_name, uint32_t event_data);
+typedef enum
+{
+    SULI_EDT_NONE, SULI_EDT_BOOL, SULI_EDT_UINT8, SULI_EDT_INT8, SULI_EDT_UINT16, SULI_EDT_INT16, SULI_EDT_INT,
+    SULI_EDT_UINT32, SULI_EDT_INT32, SULI_EDT_FLOAT, SULI_EDT_STRING
+}EVENT_DATA_TYPE_T;
+
+typedef void (*event_callback_t)(char *event_name, void *event_data, int event_data_type);
+#define EVENT_CALLBACK_T        event_callback_t
+
 struct __event_s
 {
     event_callback_t    cb;
     char                *event_name;
+    int                 event_data_type;
 };
-typedef __event_s               EVENT_T;
-typedef event_callback_t        CALLBACK_T;
+typedef __event_s    EVENT_T;
 
-inline void suli_event_init(EVENT_T *event, CALLBACK_T cb, char *name)
-{
-    event->cb = cb;
-    event->event_name = name;
-}
-inline void suli_event_trigger(EVENT_T *event, uint32_t event_data)
-{
-    if (event->cb)
-    {
-        (event->cb)(event->event_name, event_data);
+void suli_event_init(EVENT_T *event, EVENT_CALLBACK_T cb, char *name, EVENT_DATA_TYPE_T event_data_type);
+
+void suli_event_trigger(EVENT_T *event, void *event_data);
+
+
+#define DEFINE_EVENT(EVENT_NAME, EVENT_DATA_TYPE)    \
+    public: \
+    EVENT_T event_##EVENT_NAME ; \
+    inline EVENT_T *attach_event_reporter_for_##EVENT_NAME (EVENT_CALLBACK_T reporter) \
+    { \
+        suli_event_init(&event_##EVENT_NAME , reporter, #EVENT_NAME , EVENT_DATA_TYPE); \
+        return &event_##EVENT_NAME ; \
     }
+
+#define POST_EVENT(EVENT_NAME, P_EVENT_DATA)    suli_event_trigger(&event_##EVENT_NAME , (void *)(P_EVENT_DATA))
+
+#define POST_EVENT_IN_INSTANCE(INSTANCE, EVENT_NAME, P_EVENT_DATA)   suli_event_trigger(&INSTANCE->event_##EVENT_NAME, (void *)(P_EVENT_DATA))
+
+#define ATTACH_CALLBACK_FOR_EVENT(EVENT_NAME, CALLBACK)    attach_event_reporter_for_##EVENT_NAME (CALLBACK)
+
+
+
+/***************************************************************************
+ * Timer related APIs 
+ * This timer is not the one PWM used 
+ * The timer APIs implement a timer event loop based on hardware timers, 
+ * it's realtime so that it MUST NOT use the CPU too long. 
+ ***************************************************************************/
+typedef void (*timer_callback_t)(void *data);
+
+typedef struct __timer_s
+{
+    timer_callback_t    cb;
+    uint32_t            interval_ticks;
+    uint32_t            fire_ticks;
+    struct __timer_s    *prev;
+    struct __timer_s    *next;
+    void                *data;
+    bool                repeat;
+}TIMER_T;
+
+void __suli_timer_isr();
+
+#if defined(__MBED__)
+
+void __suli_timer_hw_init();
+void __suli_timer_enable_interrupt();
+void __suli_timer_disable_interrupt();
+uint32_t __suli_timer_get_ticks();
+uint32_t __suli_timer_microseconds_to_ticks(uint32_t microseconds);
+void __suli_timer_set_timeout_ticks(uint32_t ticks);
+
+#elif defined(ARDUINO)
+
+#if defined(ESP8266)
+
+void __suli_timer_hw_init();
+void __suli_timer_enable_interrupt();
+void __suli_timer_disable_interrupt();
+
+inline uint32_t __suli_timer_get_ticks()
+{
+    uint32_t ccount;
+    __asm__ __volatile__("rsr %0,ccount":"=a" (ccount));
+    return ccount;
+    
 }
+
+#define __suli_timer_microseconds_to_ticks     microsecondsToClockCycles
+
+inline void __suli_timer_set_timeout_ticks(uint32_t ticks)
+{
+    timer0_write(__suli_timer_get_ticks() + ticks);
+}
+
+#else  //standard arduino
+
+void __suli_timer_hw_init();
+void __suli_timer_enable_interrupt();
+void __suli_timer_disable_interrupt();
+
+uint32_t __suli_timer_get_ticks();
+uint32_t __suli_timer_microseconds_to_ticks(uint32_t microseconds);
+void __suli_timer_set_timeout_ticks(uint32_t ticks);
+
+#endif  //else
+#endif  //elif
+
+/** platform indepencent funtions*/
+
+/**
+ * Install a timer with interval microseconds
+ * 
+ * @param timer - the pointer to pre-allocate TIMER_T struct
+ * @param microseconds - interval length (for esp8266's 32bit timer0, the longest interval is ~52000000 us.)
+ * @param cb - callback function for this timer entry
+ * @param repeat - if repeat loading when fired
+ */
+void suli_timer_install(TIMER_T *timer, uint32_t microseconds, timer_callback_t cb, void *data, bool repeat = false);
+
+/**
+ * Remove the timer. 
+ * Note the function will not release the memory 
+ * 
+ * @param timer 
+ */
+void suli_timer_remove(TIMER_T *timer);
+
+/**
+ * Change the interval of this timer.
+ * 
+ * @param timer 
+ * @param microseconds 
+ */
+void suli_timer_control_interval(TIMER_T *timer, uint32_t microseconds);
 
 
 #endif  //__SULI2_H__

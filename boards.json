@@ -1,0 +1,46 @@
+[
+{
+    "board_name": "Wio Link v1.0",
+    "board_vendor": "seeedstudio",
+    "board_flash_map": 6,
+    "board_flash_spi_speed": 40,
+    "board_flash_spi_mode": "QIO",
+    "board_builtin":
+    {
+        "FUNCTION_KEY": 0,
+        "STATUS_LED": 2,
+        "GROVE_POWER_SWITCH": 15
+    },
+    "interfaces": 
+    {
+        "D0": { "type": "GPIO", "pin": 14 },
+        "D1": { "type": "GPIO", "pin": 12 },
+        "D2": { "type": "GPIO", "pin": 13 },
+        "A0": { "type": "ANALOG", "pin": 17 },
+        "I2C0": { "type": "I2C", "pinsda": 4, "pinscl": 5 },
+        "UART0": { "type": "UART", "pintx": 1, "pinrx": 3 }
+    }
+},
+{
+    "board_name": "Wio Node v1.0",
+    "board_vendor": "seeedstudio",
+    "board_flash_map": 6,
+    "board_flash_spi_speed": 40,
+    "board_flash_spi_mode": "QIO",
+    "board_builtin":
+    {
+        "FUNCTION_KEY": 0,
+        "STATUS_LED": 2,
+        "GROVE_POWER_SWITCH": 15
+    },
+    "interfaces": 
+    {
+        "D0": { "type": "GPIO", "pin": 3 },
+        "D1": { "type": "GPIO", "pin": 5 },
+        "A0": { "type": "ANALOG", "pin": 17 },
+        "I2C0": { "type": "I2C", "pinsda": 1, "pinscl": 3 },
+        "I2C1": { "type": "I2C", "pinsda": 4, "pinscl": 5 },
+        "UART0": { "type": "UART", "pintx": 1, "pinrx": 3 }
+    }
+}
+]
