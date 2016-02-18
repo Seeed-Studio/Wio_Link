@@ -37,6 +37,13 @@
 
 #include "suli2.h"
 
+//---------------------------------------- common ---------------------------------------------
+long suli_map(long x, long in_min, long in_max, long out_min, long out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+
+
 //---------------------------------------- mbed ---------------------------------------------
 #if defined(__MBED__)
 
@@ -358,6 +365,243 @@ int suli_uart_write_bytes(UART_T *uart, uint8_t *data, int len)
     return len;
 }
 
+/**
+ * Timer related for arduino
+ */
+#ifdef ESP8266
+void __suli_timer_hw_init()
+{
+    timer0_isr_init();
+    __suli_timer_set_timeout_ticks(0xfffffff);
+    __suli_timer_enable_interrupt();
+}
 
+void __suli_timer_enable_interrupt()
+{
+    timer0_attachInterrupt(__suli_timer_isr);
+}
+void __suli_timer_disable_interrupt()
+{
+    timer0_detachInterrupt();
+}
 
+#else
+void __suli_timer_hw_init()
+{
+    
+}
+void __suli_timer_enable_interrupt()
+{
+    
+}
+void __suli_timer_disable_interrupt()
+{
+    
+}
 #endif
+
+
+#endif  //defined(arduino)
+
+
+/*
+ * ========================================================================= 
+ * Platform independent functions are implemented here 
+ * ========================================================================= 
+ */
+
+/***************************************************************************
+ * Event related APIs
+ ***************************************************************************/
+void suli_event_init(EVENT_T *event, EVENT_CALLBACK_T cb, char *name, EVENT_DATA_TYPE_T event_data_type)
+{
+    event->cb = cb;
+    event->event_name = name;
+    event->event_data_type = (int)event_data_type;
+}
+void suli_event_trigger(EVENT_T *event, void *event_data)
+{
+    if (event->cb)
+    {
+        (event->cb)(event->event_name, event_data, event->event_data_type);
+    }
+}
+
+
+
+/***************************************************************************
+ * Timer related APIs 
+ */
+static bool __timer_hw_inited = false;
+static TIMER_T *__timer_list_head = NULL;
+
+/**
+ * Insert a pre-allocated timer entry into timer's ring 
+ * This implementation eats the time elapsed before this insertion operation 
+ * if there's a timer entry waiting to be fired at the head of timer entry ring. 
+ *  
+ * load time for head       cur time      fire time for head
+ *        |                    |                 |
+ * ----------------------------------------------------------> 
+ *        |        eaten       |
+ *  
+ * So this implementation assumes that all the installation of timers are done 
+ * at the very beginning and don't care about the alignment of the timer entries. 
+ *  
+ * @param src - the entry to be inserted
+ * @param new_head - output var, indicate if the ring's head is new one
+ * 
+ * @return void  
+ */
+void ICACHE_RAM_ATTR __suli_timer_insert_entry(TIMER_T *src, bool *new_head)
+{
+    if (__timer_list_head)
+    {
+        TIMER_T *pt = __timer_list_head;
+        uint32_t sum = 0;
+        uint32_t dt;
+        
+        for (;;)
+        {
+            if (pt == src)
+            {
+                pt->interval_ticks = src->interval_ticks;
+                return;
+            }
+            sum += pt->fire_ticks;
+            if (src->interval_ticks < sum)  //insert before pt
+            {
+                if(pt->prev)
+                {
+                    dt = pt->fire_ticks - (sum - src->interval_ticks);
+                    src->fire_ticks = dt == 0 ? 80 : dt;  //if 2 timers are fired the same time, the last inserted one is delayed 1us
+                    src->prev = pt->prev;
+                    src->prev->next = src;
+                } else
+                {
+                    src->prev = NULL;
+                    src->fire_ticks = src->interval_ticks;
+                    __timer_list_head = src;
+                    *new_head = true;
+                }
+                
+                pt->fire_ticks -= src->fire_ticks;
+                pt->prev = src;
+                src->next = pt;
+
+                return;
+            }
+            if (pt->next) pt = pt->next;
+            else break;
+        }
+        //insert at the end
+        dt = src->interval_ticks - sum;
+        src->fire_ticks = (dt == 0) ? 80 : dt;  //if 2 timers are fired the same time, the last inserted one is delayed 1us
+        src->next = NULL;
+        src->prev = pt;
+        pt->next = src;
+        
+    } else
+    {
+        src->prev = NULL;
+        src->next = NULL;
+        src->fire_ticks = src->interval_ticks;
+        __timer_list_head = src;
+        *new_head = true;
+    }
+}
+
+void ICACHE_RAM_ATTR __suli_timer_isr()
+{
+    if (__timer_list_head)
+    {
+        __timer_list_head->cb(__timer_list_head->data);
+        
+        TIMER_T *p_last_head = NULL;
+        bool new_head = false;
+        
+        if (__timer_list_head->repeat)
+        {
+            p_last_head = __timer_list_head;
+        }
+        
+        __timer_list_head = __timer_list_head->next;
+        
+        if (__timer_list_head)
+        {
+            __timer_list_head->prev = NULL;
+        }
+        if (p_last_head)
+        {
+            __suli_timer_insert_entry(p_last_head, &new_head);
+        }
+        if (__timer_list_head)
+        {
+            __suli_timer_set_timeout_ticks(__timer_list_head->fire_ticks);
+        } else
+        {
+            __suli_timer_set_timeout_ticks(0xfffffff);  //must update compare0, or the wdt will timeout
+        }
+    } else
+    {
+        __suli_timer_set_timeout_ticks(0xfffffff);  //must update compare0, or the wdt will timeout
+    }
+}
+
+void suli_timer_install(TIMER_T *timer, uint32_t microseconds, timer_callback_t cb, void *data, bool repeat = false)
+{    
+    if (!__timer_hw_inited)
+    {
+        __suli_timer_hw_init();
+        __timer_hw_inited = true;
+    }
+        
+    bool new_head = false;
+    
+    timer->cb = cb;
+    timer->interval_ticks = __suli_timer_microseconds_to_ticks(microseconds);
+    timer->data = data;
+    timer->repeat = repeat;
+
+    __suli_timer_disable_interrupt();
+    __suli_timer_insert_entry(timer, &new_head);
+    __suli_timer_enable_interrupt();
+    
+    if (new_head)
+    {
+        __suli_timer_set_timeout_ticks(__timer_list_head->fire_ticks);
+    }
+
+}
+
+void suli_timer_remove(TIMER_T *timer)
+{
+    if (__timer_list_head)
+    {
+        TIMER_T *pt = __timer_list_head;
+        do
+        {
+            if (pt == timer)
+            {
+                if (pt->prev)
+                {
+                    pt->prev->next = pt->next;
+                } else
+                {
+                    __timer_list_head = pt->next;
+                }
+                if (pt->next)
+                {
+                    pt->next->prev = pt->prev;
+                    pt->next->fire_ticks += pt->fire_ticks;
+                }
+                break;
+            }
+        } while (pt = pt->next);
+    }
+}
+
+void suli_timer_control_interval(TIMER_T *timer, uint32_t microseconds)
+{
+    timer->interval_ticks = __suli_timer_microseconds_to_ticks(microseconds);
+}

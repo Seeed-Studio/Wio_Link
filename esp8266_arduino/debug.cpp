@@ -22,15 +22,15 @@
 #include "debug.h"
 
 void ICACHE_RAM_ATTR hexdump(uint8_t *mem, uint32_t len, uint8_t cols) {
-    os_printf("\n[HEXDUMP] Address: 0x%08X len: 0x%X (%d)", (size_t)mem, len, len);
+    Serial1.printf("\n[HEXDUMP] Address: 0x%08X len: 0x%X (%d)", (size_t)mem, len, len);
     for(uint32_t i = 0; i < len; i++) {
         if(i % cols == 0) {
-            os_printf("\n[0x%08X] 0x%08X: ", (size_t)mem, i);
+            Serial1.printf("\n[0x%08X] 0x%08X: ", (size_t)mem, i);
         	yield();
         }
-        os_printf("%02X ", *mem);
+        Serial1.printf("%02X ", *mem);
         mem++;
     }
-    os_printf("\n");
+    Serial1.printf("\n");
 }
 

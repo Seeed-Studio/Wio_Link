@@ -44,9 +44,6 @@ On the plan:
 * Integration with Seeed unified user login interface
 * More grove drivers and 3rd party module drivers continue to be integrated
 
-Note: The source code is being prepared, we will publish it as soon as the shipment of Wio Link hardware begins.
-
-
 
 ## About the Server
 

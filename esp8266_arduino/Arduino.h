@@ -240,6 +240,7 @@ void loop(void);
 //#include "FileSystem.h"
 #include "Esp.h"
 #include "debug.h"
+#include "interrupts.h"
 
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)>(b)?(a):(b))

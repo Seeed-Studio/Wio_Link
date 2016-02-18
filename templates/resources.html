@@ -1,0 +1,452 @@
+<html>
+<head>
+    <title>Resources of {{node_name}}</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cn.iot.seeed.cc/common_static/bootstrap-3.3.5-dist/css/bootstrap.min.css">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://cn.iot.seeed.cc/common_static/bootstrap-3.3.5-dist/css/bootstrap-theme.min.css" >
+
+    <script src = "https://cn.iot.seeed.cc/common_static/js/jquery-1.11.3.min.js"></script>
+</head>
+
+<body style="padding: 10px;">
+{% if not data %}
+<div class="panel panel-default">
+    <div class="panel-body">
+        No Resources.<br>This is usually due to the incorrect configuration for the node.
+    </div>
+</div>
+{% else %}
+{% for item in data %}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <p class="panel-title" style="word-wrap: break-word;" id="url_{{item['uuid']}}">{{item['url']}}</p>
+    </div>
+    <div class="panel-body">
+        {% if item['brief'] %}
+        <p>{% raw item['brief'] %}</p>
+        {% end %}
+    </div>
+    <table class="table">
+        <tr>
+            <td><h5>Request method: {{item['type']}}</h5></td>
+        </tr>
+
+        {% if item['arguments'] %}
+        <tr>
+            <td>
+                <h5>Arguments in URL:</h5>
+                <ul>
+                {% for arg in item['arguments'] %}
+                <li>{{arg}}</li>
+                {% end %}
+                </ul>
+            </td>
+        </tr>
+        {% end %}
+
+        <tr>
+            <td>
+                <h5>Returns:</h5>
+                <ul>
+                {% if item['type'] == 'GET' %}
+                <li>HTTP 200 { {{item['returns']}} }</li>
+                {% if item['return_docs'] %}
+                {% for ret_doc in item['return_docs'] %}
+                <ul style="margin: 5px;">
+                <li>{{ret_doc}}</li>
+                </ul>
+                {% end %}
+                {% end %}
+                <li>HTTP 400 {"error": "failure reason here"}</li>
+                {% else %}
+                <li>HTTP 200 {"result": "OK"}</li>
+                <li>HTTP 400 {"error": "failure reason here"}</li>
+                {% end %}
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+    <div class="panel-body">
+        <h5>Test Request:</h5>
+        <div class="form-inline" id="form_{{item['uuid']}}">
+            {% if item['arguments_name'] %}
+            {% for arg in item['arguments_name'] %}
+            <div class="form-group">
+                <label class="sr-only" for="{{item['uuid']}}_{{arg}}">{{arg}}</label>
+                <input type="text" class="form-control" id="{{item['uuid']}}_{{arg}}" placeholder="{{arg}}">
+            </div>
+            {% end %}
+            {% end %}
+            <button type="button" id="button_{{item['uuid']}}" class="btn btn-default btn-sm" data-loading-text="Loading...">{{item['type']}}</button>
+        </div>
+    </div>
+    <div class="panel-body" id="result_panel_{{item['uuid']}}" style="display: none;">
+        <div class="well well-sm">
+            <p id="curl_{{item['uuid']}}" style="word-wrap: break-word;"><strong>curl example:</strong> <br>curl {% if item['type'] == 'POST' %}-X POST {% end %}-k {{item['url']}}</p>
+            <p id="result_{{item['uuid']}}" style="word-wrap: break-word;"></p>
+        </div>
+    </div>
+</div>
+{% end %}
+<!-- sleep apis -->
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <p class="panel-title" style="word-wrap: break-word;" id="url_sleep">{{url_base}}/v1/node/pm/sleep/[sleep_time_sec]?access_token={{node_key}}</p>
+    </div>
+    <div class="panel-body">
+        <p>Put the node into deep sleep mode in which the whole board's power will be shut down except that power of CP2102 if the system is powered by USB.<br>
+            This will reduce the current consumption of the board to ~10mA if it's powered by micro USB (due to the usb to serial chip CP2102).
+            And the current will drop to ~1mA if the board is powered by battery.<br>
+            The sleep will not be intermittently triggered. You need to call the sleep API every time you want the node to sleep.
+            You can continue to send GET/POST requests after a sleep command has been executed, the node will return a 404 status code and a message saying it's offline.
+            Then the node wake up and join the router within about 5 seconds. You do some stuff and put the node into sleep again.<br><br>
+            <strong>Note: Please take care of the initialization if any of the connected Grove modules needs a heat-up process.</strong></p>
+    </div>
+    <table class="table">
+        <tr>
+            <td><h5>Request method: POST</h5></td>
+        </tr>
+
+        <tr>
+            <td>
+                <h5>Arguments in URL:</h5>
+                <ul>
+                <li>[sleep_time_sec]: uint32_t value, the number of seconds to sleep</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <h5>Returns:</h5>
+                <ul>
+                <li>HTTP 200 {"result": "OK"}</li>
+                <li>HTTP 400 {"error": "failure reason here"}</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+    <div class="panel-body">
+        <h5>Test Request:</h5>
+        <div class="form-inline" id="form_sleep">
+            <div class="form-group">
+                <label class="sr-only" for="sleep_time">sleep_time_sec</label>
+                <input type="text" class="form-control" id="sleep_time" placeholder="[sleep_time_sec]">
+            </div>
+            <button type="button" id="button_sleep" class="btn btn-default btn-sm" data-loading-text="Loading...">POST</button>
+        </div>
+    </div>
+    <div class="panel-body" id="result_panel_sleep" style="display: none;">
+        <div class="well well-sm">
+            <p id="curl_sleep" style="word-wrap: break-word;"><strong>curl example:</strong> <br>curl -X POST -k {{url_base}}/v1/node/pm/sleep/[sleep_time_sec]?access_token={{node_key}}</p>
+            <p id="result_sleep" style="word-wrap: break-word;"></p>
+        </div>
+    </div>
+</div>
+
+<!--div class="panel panel-default">
+    <div class="panel-heading">
+        <p class="panel-title" style="word-wrap: break-word;" id="url_all_sleep">{{url_base}}/v1/node/pm/sleep_all/[sleep_time_sec]?access_token={{node_key}}</p>
+    </div>
+    <div class="panel-body">
+        <p>Put the node into deep sleep mode, also this API will turn off the power of all connected Grove modules.<br>
+            This will reduce the current consumption of the whole system to ~20mA if it's powered by micro USB (due to the usb to serial chip).
+            And the current will drop to ~1mA if the system is powered by battery.<br><br>
+            <strong>Note: Please make sure that none of the connected Grove modules needs a heat-up process.</strong></p>
+    </div>
+    <table class="table">
+        <tr>
+            <td><h5>Request method: POST</h5></td>
+        </tr>
+
+        <tr>
+            <td>
+                <h5>Arguments in URL:</h5>
+                <ul>
+                <li>[sleep_time_sec]: uint32_t value, the number of seconds to sleep</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <h5>Returns:</h5>
+                <ul>
+                <li>{"status": 200, "msg": "OK"}</li>
+                <li>{"status": 205, "msg": "failure reason here"}</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+    <div class="panel-body">
+        <h5>Test Request:</h5>
+        <div class="form-inline" id="form_all_sleep">
+            <div class="form-group">
+                <label class="sr-only" for="all_sleep_time">sleep_time_sec</label>
+                <input type="text" class="form-control" id="all_sleep_time" placeholder="[sleep_time_sec]">
+            </div>
+            <button type="button" id="button_all_sleep" class="btn btn-default btn-sm" data-loading-text="Loading...">POST</button>
+        </div>
+    </div>
+    <div class="panel-body" id="result_panel_all_sleep" style="display: none;">
+        <div class="well well-sm">
+            <p id="curl_all_sleep" style="word-wrap: break-word;"><strong>curl example:</strong> <br>curl -X POST -k {{url_base}}/v1/node/pm/sleep_all/[sleep_time_sec]?access_token={{node_key}}</p>
+            <p id="result_all_sleep" style="word-wrap: break-word;"></p>
+        </div>
+    </div>
+</div-->
+<!--end sleep apis -->
+
+
+<!-- grove power switch apis -->
+
+<!--div class="panel panel-default">
+    <div class="panel-heading">
+        <p class="panel-title" style="word-wrap: break-word;" id="url_switch_grove">{{url_base}}/v1/node/pm/power_grove/[onoff]?access_token={{node_key}}</p>
+    </div>
+    <div class="panel-body">
+        <p>Swtich the power supply for Grove modules connected.</p>
+    </div>
+    <table class="table">
+        <tr>
+            <td><h5>Request method: POST</h5></td>
+        </tr>
+
+        <tr>
+            <td>
+                <h5>Arguments in URL:</h5>
+                <ul>
+                <li>[onoff]: uint8_t value, 0: power off the groves, 1: power on</li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <h5>Returns:</h5>
+                <ul>
+                <li>{"status": 200, "msg": "OK"}</li>
+                <li>{"status": 205, "msg": "failure reason here"}</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+    <div class="panel-body">
+        <h5>Test Request:</h5>
+        <div class="form-inline" id="form_switch_grove">
+            <div class="form-group">
+                <label class="sr-only" for="switch_grove_onoff">onoff</label>
+                <input type="text" class="form-control" id="switch_grove_onoff" placeholder="[onoff]">
+            </div>
+            <button type="button" id="button_switch_grove" class="btn btn-default btn-sm" data-loading-text="Loading...">POST</button>
+        </div>
+    </div>
+    <div class="panel-body" id="result_panel_switch_grove" style="display: none;">
+        <div class="well well-sm">
+            <p id="curl_switch_grove" style="word-wrap: break-word;"><strong>curl example:</strong> <br>curl -X POST -k {{url_base}}/v1/node/pm/power_grove/[onoff]?access_token={{node_key}}</p>
+            <p id="result_switch_grove" style="word-wrap: break-word;"></p>
+        </div>
+    </div>
+</div>
+<!-- end grove power switch apis -->
+
+
+
+{% end %}
+
+{% if events %}
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ws_domain}}/v1/node/event</h3>
+    </div>
+    <div class="panel-body">
+        <h5>Request method: websocket</h5>
+
+        <h5>Events:</h5>
+        <ul>
+        {% for ev in events %}
+        <li>{"{{ev['event_name']}}": [event data] }</li>
+            <span>{{ev['event_data_type']}} value. {% raw ev['event_desc'] %}</span>
+        {% end %}
+        </ul>
+        <h5>Note:</h5>
+        <p>When the websocket connection is opened, you need to send the access token of your node first.
+            The token for this node is "{{node_key}}".
+        </p >
+        <h5>Example:</h5>
+        <pre>
+&lt;script&gt;
+var ws = new WebSocket('{{ws_domain}}/v1/node/event');
+ws.onopen = function() {
+&nbsp;&nbsp;&nbsp;&nbsp;ws.send("{{node_key}}");
+};
+ws.onmessage = function (evt) {
+&nbsp;&nbsp;&nbsp;&nbsp;alert(evt.data);
+};
+&lt;/script&gt;
+        </pre>
+    </div>
+    <div class="panel-body">
+        <h5>Test Request:</h5>
+        <div class="form-inline">
+            <input type="button" id="button_ws" class="btn btn-default btn-sm" value="CONNECT">
+        </div>
+        <div class="well well-sm" style="display: none; margin-top: 10px;font-size:85%;" id="result_ws"></div>
+    </div>
+</div>
+{% end %}
+
+<!--Latest compiled and minified JavaScript-->
+<script src="https://cn.iot.seeed.cc/common_static/bootstrap-3.3.5-dist/js/bootstrap.min.js"></script>
+
+<script >
+$(function(){
+    $('div.form-inline > button').each(function(){
+        $(this).on('click', function () {
+            var button_text = $(this).text();
+            if (button_text == "Loading...")
+            {
+                return;
+            }
+            $(this).text("Loading...");
+            var btn_id = $(this).attr("id");
+            var uuid = btn_id.replace("button_","");
+            console.log(uuid);
+            var url = $("#url_"+uuid).text();
+            console.log(url);
+
+            var empty = false;
+
+            $("#form_"+uuid+" input").each(function(){
+                $(this).parent().removeClass("has-error");                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          $(this).addClass("has-error");
+                var value = $(this).val().trim();
+                if (value.length < 1)
+                {
+                    //console.log($(this).val().length);
+                    $(this).parent().addClass("has-error");
+                    empty = true;
+                }else
+                {
+                    url = url.replace($(this).attr("placeholder"), value);
+                }
+            });
+            console.log(empty);
+            if (!empty)
+            {
+                if (url.indexOf("/v1") < 0)
+                {
+                    url = url.replace("v1", "/v1");
+                }
+                if (url.lastIndexOf("//") > 6)
+                {
+                    url = url.substr(0, 8) + url.substr(8, url.length - 8).replace("//", "/");
+                }
+                var curl_text = "<strong>Curl example:</strong> <br>curl -k ";
+                if (button_text == "POST")
+                {
+                    curl_text += "-X POST ";
+                }
+                curl_text += url;
+                console.log(curl_text);
+
+
+                console.log(url);
+                $.ajax({
+                    url: url,
+                    type: button_text,
+                    timeout: 10000,
+                    dataType: "text",
+                    context: $(this),
+                    success: function(result,status,xhr)
+                    {
+                        var result_text = "<strong>Response:</strong> <br>"+result.toString();
+                        $("#curl_"+uuid).html(curl_text);
+                        $("#result_" + uuid).html(result_text);
+                        $("#result_panel_" + uuid).fadeIn("slow");
+
+                    },
+                    error: function(xhr,status,error)
+                    {
+                         console.log(error);
+                         console.log(status);
+                         var result_text = "<strong>Response:</strong> <br>"+xhr.responseText;
+                         $("#curl_"+uuid).html(curl_text);
+                         $("#result_" + uuid).html(result_text);
+                         $("#result_panel_" + uuid).fadeIn("slow");
+                    },
+                    complete: function(xhr, status)
+                    {
+                         console.log("complete: "+status);
+                         $(this).text(button_text);
+                    }
+                });
+            } else
+            {
+                $(this).text(button_text);
+            }
+
+        });
+    });
+
+
+    $("#button_ws").on("click", function() {
+        if ($(this).val() == "CONNECT")
+        {
+            var wsUri = "{{ws_domain}}/v1/node/event";
+            //$(this).val("Loading...");
+            websocket = new WebSocket(wsUri);
+            websocket.onopen = function(evt) { onOpen(evt) };
+            websocket.onclose = function(evt) { onClose(evt) };
+            websocket.onmessage = function(evt) { onMessage(evt) };
+            websocket.onerror = function(evt) { onError(evt) };
+        }else if($(this).val() == "DISCONNECT")
+        {
+            if (websocket)
+            {
+                websocket.close();
+            }
+        }
+    });
+});
+
+function onOpen(evt)
+{
+    $("#button_ws").val("DISCONNECT");
+    $("#result_ws").fadeIn();
+    writeToScreen("CONNECTED");
+    doSend("{{node_key}}");
+}
+function onClose(evt)
+{
+    writeToScreen("DISCONNECTED");
+    $("#button_ws").val("CONNECT");
+}
+function onMessage(evt)
+{
+    writeToScreen('<span style="color: blue;">RECV: ' + evt.data + '</span>');
+    //websocket.close();
+}
+function onError(evt)
+{
+    writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+}
+function doSend(message)
+{
+    writeToScreen("SENT: " + message);
+    websocket.send(message);
+}
+var msg_index = 0;
+function writeToScreen(message)
+{
+    $("<p style='word-wrap: break-word; '></p>").html("["+msg_index+"] "+message).prependTo("#result_ws");
+    msg_index++;
+}
+</script>
+
+</body>
+</html>
