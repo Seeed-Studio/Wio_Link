@@ -231,7 +231,7 @@ All require: User token
 </aside>
 
 <h2 id="create-a-node">Create a node</h2>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> -d <span class="nv">name</span><span class="o">=</span>node_1  https://iot.seeed.cc/v1/nodes/create
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> -d <span class="nv">name</span><span class="o">=</span>node_1 -d <span class="nv">board</span><span class="o">=</span><span class="s2">"Wio Link v1.0"</span> https://iot.seeed.cc/v1/nodes/create
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"e3d3b0fe920ddc3c69393fdbf83a2114"</span><span class="p">,</span><span class="w"> 
@@ -252,6 +252,11 @@ All require: User token
 <td>name</td>
 <td>string</td>
 <td>The name for the new node</td>
+</tr>
+<tr>
+<td>board</td>
+<td>string</td>
+<td>The board type of the new node, can be one of &ldquo;Wio Link v1.0&rdquo;, &ldquo;Wio Node v1.0&rdquo; for now. If not present, the default board type will be Wio Link v1.0.</td>
 </tr>
 </tbody></table>
 
@@ -280,18 +285,20 @@ All require: User token
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"nodes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
         </span><span class="p">{</span><span class="w">
-            </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"e3d3b0fe920ddc3c69393fdbf83a2114"</span><span class="p">,</span><span class="w">
-            </span><span class="nt">"dataxserver"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
-            </span><span class="nt">"online"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w">
-            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"weird name"</span><span class="p">,</span><span class="w">
-            </span><span class="nt">"node_sn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"819554bd9519c94a19cc7fbd32447118"</span><span class="w">
+          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hhhh"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"15f96fe2ababdf7d177bd0d8c19cdf31"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"node_sn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"7168f50df4a48fb2d21c8e37b01dd210"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"dataxserver"</span><span class="p">:</span><span class="w"> </span><span class="s2">"192.168.1.2"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"board"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Wio Link v1.0"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"online"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
         </span><span class="p">},</span><span class="w">
         </span><span class="p">{</span><span class="w">
-            </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"e3da3a2114asdfo9713801adfkjdhfa"</span><span class="p">,</span><span class="w">
-            </span><span class="nt">"dataxserver"</span><span class="p">:</span><span class="w"> </span><span class="s2">"192.168.31.2"</span><span class="p">,</span><span class="w">
-            </span><span class="nt">"online"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">
-            </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"nice name"</span><span class="p">,</span><span class="w">
-            </span><span class="nt">"node_sn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1242309jdfjk98087qejljdflkajdsf98"</span><span class="w">
+          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"nnnn"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"4ffef50da2d50b9a40443947c75901ad"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"node_sn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"98058f29c3621a396b7c96978b25f3d1"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"dataxserver"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"board"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Wio Link v1.0"</span><span class="p">,</span><span class="w">
+          </span><span class="nt">"online"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
         </span><span class="p">}</span><span class="w">
     </span><span class="p">]</span><span class="w">
 </span><span class="p">}</span><span class="w">
@@ -540,6 +547,7 @@ All require: Node token
 <pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/.well-known
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
+    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"node name"</span><span class="p">,</span><span class="w">
     </span><span class="nt">"well_known"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
         </span><span class="s2">"GET /v1/node/GroveAccMMA7660/accelerometer -&gt; float ax, float ay, float az"</span><span class="p">,</span><span class="w">
         </span><span class="s2">"GET /v1/node/Grove_Example1/with_arg/{int arg} -&gt; float cx, float cy, float cz, int degree"</span><span class="p">,</span><span class="w">
@@ -675,7 +683,7 @@ The parameters are location sensitive. They must follow the order of what the we
 
 <p>Put the node into deep sleep mode in which the whole board&rsquo;s power will be shut down except that power of CP2102 if the system is powered by USB.</p>
 
-<p>This will reduce the current consumption of the board to ~10mA if it&rsquo;s powered by micro USB (due to the usb to serial chip CP2102). And the current will drop to ~1mA if the board is powered by battery.</p>
+<p>This will reduce the current consumption of the board to ~10mA if it&rsquo;s powered by micro USB (due to CP2102). And the current will drop to ~1mA if the board is powered by battery.</p>
 
 <p>The sleep will not be intermittently triggered. You need to call the sleep API every time you want the node to sleep. You can continue to send GET/POST requests after a sleep command has been executed, the node will return a 404 status code and a message saying it&rsquo;s offline. Then the node wake up and join the router within about 5 seconds. You do some stuff and put the node into sleep again.</p>
 
