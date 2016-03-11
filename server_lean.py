@@ -38,7 +38,7 @@ CUSTOM_OTA_SERVER_ADDR='https://192.168.31.2'
 
 #Set the accounts which will be used when logging in the OTA server
 #Set each account with a key-value pair in which the pattern is email:password
-ACCOUNTS={'jjj@jjj.com':'jjjjjj'}
+ACCOUNTS={'example@mail.com':'password'}
 
 ########################################
 
