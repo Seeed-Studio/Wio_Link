@@ -25,7 +25,7 @@
 #define OTA_SERVER_URL_PREFIX       "/v1"
 #endif
 
-#define ENABLE_DEBUG_ON_UART1       1
+#define ENABLE_DEBUG_ON_UART1       0
 
 /* eeprom slots */
 #define EEP_OFFSET_KEY              0
