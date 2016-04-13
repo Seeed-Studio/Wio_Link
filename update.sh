@@ -6,6 +6,7 @@ then
 else
     echo "Now clone the repo..."
     git clone https://github.com/Seeed-Studio/Wio_Link.git pion_one_git_clone
+    git submodule init
 fi
 
 cd ./pion_one_git_clone/
