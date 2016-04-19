@@ -51,7 +51,12 @@
 #ifndef constrain(amt,low,high)
 #define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
 #endif
+
 long suli_map(long x, long in_min, long in_max, long out_min, long out_max);
+
+#ifndef ICACHE_RAM_ATTR
+#define ICACHE_RAM_ATTR
+#endif
 
 
 /***************************************************************************
