@@ -107,7 +107,7 @@ typedef struct {
 static interrupt_handler_t interrupt_handlers[16];
 static uint32_t interrupt_reg = 0;
 
-void interrupt_handler(void *arg) {
+void ICACHE_RAM_ATTR interrupt_handler(void *arg) {
   uint32_t status = GPIE;
   GPIEC = status;//clear them interrupts
   if(status == 0 || interrupt_reg == 0) return;
@@ -136,7 +136,7 @@ void interrupt_handler(void *arg) {
   ETS_GPIO_INTR_ENABLE();
 }
 
-extern void __attachInterrupt(uint8_t pin, voidFuncPtr userFunc, int mode) {
+extern void ICACHE_RAM_ATTR __attachInterrupt(uint8_t pin, voidFuncPtr userFunc, int mode) {
   if(pin < 16) {
     interrupt_handler_t *handler = &interrupt_handlers[pin];
     handler->mode = mode;
@@ -152,7 +152,7 @@ extern void __attachInterrupt(uint8_t pin, voidFuncPtr userFunc, int mode) {
 /**
  * Add by Jack
  */
-extern void attachInterruptEx(uint8_t pin, interrupt_handler_func userFunc, int mode, void *para) {
+extern void ICACHE_RAM_ATTR attachInterruptEx(uint8_t pin, interrupt_handler_func userFunc, int mode, void *para) {
   if(pin < 16) {
     interrupt_handler_t *handler = &interrupt_handlers[pin];
     handler->mode = mode;
@@ -166,7 +166,7 @@ extern void attachInterruptEx(uint8_t pin, interrupt_handler_func userFunc, int 
 }
 
 
-extern void __detachInterrupt(uint8_t pin) {
+extern void ICACHE_RAM_ATTR __detachInterrupt(uint8_t pin) {
   if(pin < 16) {
     GPC(pin) &= ~(0xF << GPCI);//INT mode disabled
     GPIEC = (1 << pin); //Clear Interrupt for this pin

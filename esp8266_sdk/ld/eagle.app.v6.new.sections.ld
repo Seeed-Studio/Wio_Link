@@ -148,8 +148,10 @@ SECTIONS
     *.cpp.o(.literal*, .text*)
     /**arduino_pack.a:(.literal .text .literal.* .text.*)*/
     *libm.a:(.literal .text .literal.* .text.*)
+    *libgcc.a:_umoddi3.o(.literal .text)
+    *libgcc.a:_udivdi3.o(.literal .text)
     *libsmartconfig.a:(.literal .text .literal.* .text.*)
-    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
+    *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text .irom.text.*)
     _irom0_text_end = ABSOLUTE(.);
     _flash_code_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr
