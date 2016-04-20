@@ -140,7 +140,7 @@ class IndexHandler(BaseHandler):
 
 class TestHandler(web.RequestHandler):
     def get(self):
-        self.render("test.html", **args)
+        self.render("test.html", ip=self.request.remote_ip)
 
 
 
@@ -963,12 +963,36 @@ class NodeGetResourcesHandler(NodeBaseHandler):
         node_id = node['node_id']
         node_sn = node['node_sn']
         node_key = node['private_key']
+        dataxserver = node['dataxserver']
 
         cur_dir = os.path.split(os.path.realpath(__file__))[0]
         user_build_dir = cur_dir + '/users_build/' + str(user_id) + '_' + node_sn
         if not os.path.exists(user_build_dir):
             self.resp(404, "Configuration file not found")
             return
+
+        #adjust the vhost
+        self.vhost_url_base = server_config.vhost_url_base.rstrip('/')
+
+        if not self.vhost_url_base:
+            if self.request.host.find(":8080") >= 0:
+                protocol = 'http'
+            else:
+                protocol = 'https'
+            self.vhost_url_base = '%s://%s' % (protocol, self.request.host)
+
+        self.vhost_url_base = self.get_argument("data_server", self.vhost_url_base)
+        #print self.vhost_url_base
+
+        patt = r'^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:\d+)*(\/\w+\.\w+)*$'
+        if not re.match(patt, self.vhost_url_base):
+            self.write("Bad format of parameter data_server. Should be: http[s]://domain-or-ip-address[:port]")
+            return
+
+        #if self.vhost_url_base.find('http') < 0:
+        #    self.vhost_url_base = 'https://'+self.vhost_url_base
+        #print self.vhost_url_base
+
 
         #open the yaml file for reading
         try:
@@ -989,7 +1013,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
 
         #calculate the checksum of 2 file
         sha1 = hashlib.sha1()
-        sha1.update(config_file.read())
+        sha1.update(config_file.read() + self.vhost_url_base)
         chksum_config = sha1.hexdigest()
         sha1 = hashlib.sha1()
         sha1.update(drv_db_file.read() + drv_doc_file.read())
@@ -1007,7 +1031,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
             resource = None
 
         if resource:
-            if chksum_config == resource['chksum_config'] and chksum_drv_db == resource['chksum_dbjson'] and 0:
+            if chksum_config == resource['chksum_config'] and chksum_drv_db == resource['chksum_dbjson']:
                 gen_log.info("echo the cached page for node_id: %d" % node_id)
                 self.write(resource['render_content'])
                 return
@@ -1049,19 +1073,6 @@ class NodeGetResourcesHandler(NodeBaseHandler):
         #prepare resource data structs
         data = []
         events = []
-        self.vhost_url_base = server_config.vhost_url_base.rstrip('/')
-
-        if not self.vhost_url_base:
-            if self.request.host.find(":8080") >= 0:
-                protocol = 'http'
-            else:
-                protocol = 'https'
-            self.vhost_url_base = '%s://%s' % (protocol, self.request.host)
-
-        #self.vhost_url_base = self.get_argument("data_server", server_config.vhost_url_base.rstrip('/'))
-        #if self.vhost_url_base.find('http') < 0:
-        #    self.vhost_url_base = 'https://'+self.vhost_url_base
-        #print self.vhost_url_base
 
         if config:
             for grove_instance_name in config.keys():
