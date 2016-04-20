@@ -869,14 +869,14 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through OTA Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -X POST https://iot.seeed.cc/v1/node/setting/dataxserver/192.168.31.2?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+<pre class="highlight shell"><code>curl -X POST -d <span class="nv">dataxurl</span><span class="o">=</span>https://example.com https://iot.seeed.cc/v1/node/setting/dataxserver/192.168.31.2?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="w">
 </span><span class="p">}</span><span class="w">
 </span></code></pre>
 
-<p>Change the data exchange server for a specific node. As the changing will be taken place at the node side, this API needs the node online. This API will cause the node reboot once. After rebooted, the node will interact with the configured data exchange server for data and event transmission. And the configured data exchange server can be queried with the nodes/list API.</p>
+<p>Change the data exchange server for a specific node. As the changing will be taken place at the node side, this API needs the node online. This API will cause the node reboot once. After rebooted, the node will interact with the configured data exchange server for data and event transmission. This API endpoint needs two parameters, one is in the url path, another is in the post body. The IP address in the url path will be sent to the node over the air while the dataxurl will be stored in the database. The stored url of data exchange server can be queried with the nodes/list API.</p>
 
 <p><code class="prettyprint">POST /v1/node/setting/dataxserver/{address}</code></p>
 
@@ -890,7 +890,12 @@ The parameters are location sensitive. They must follow the order of what the we
 <tr>
 <td>address</td>
 <td>string</td>
-<td>The IP address of the data x server. Only IP address supported.</td>
+<td>The IP address of data exchange server. Only IP address supported.</td>
+</tr>
+<tr>
+<td>dataxurl</td>
+<td>string</td>
+<td>The url of data exchange server. e.g. https://my-domain.com or http://192.168.1.2</td>
 </tr>
 </tbody></table>
 
