@@ -701,15 +701,30 @@ class NodeFunctionHandler(NodeReadWriteHandler):
 
 class NodeSettingHandler(NodeReadWriteHandler):
 
-    def post_request(self, req_type, uri, resp):
-        if req_type == 'post' and arg.find('setting/dataxserver') >= 0:
+    def pre_request(self, req_type, uri):
+        if req_type == 'post' and uri.find('setting/dataxserver') >= 0:
             ips = re.findall(r'.*/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', uri)
-            if len(ips) > 0:
-                #print ips[0]
-                gen_log.debug('node %d want to change data x server to %s' % (self.node['node_id'], ips[0]))
+            if not ips:
+                self.resp(400, "please specify the correct ip address for data exchange server")
+                return False
+            url = self.get_argument('dataxurl', '')
+            patt = r'^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:\d+)*(\/\w+\.\w+)*$'
+            if not url or not re.match(patt, url):
+                self.resp(400, "please specify the correct url for data exchange server")
+                return False
+            else:
+                return True
+
+    def post_request(self, req_type, uri, resp):
+        if req_type == 'post' and uri.find('setting/dataxserver') >= 0:
+            #ips = re.findall(r'.*/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', uri)
+            url = self.get_argument('dataxurl', '')
+            if url:
+                #print url
+                gen_log.debug('node %d want to change data x server to %s' % (self.node['node_id'], url))
                 try:
                     cur = self.application.cur
-                    cur.execute('update nodes set dataxserver=? where node_id=?', (ips[0], self.node['node_id']))
+                    cur.execute('update nodes set dataxserver=? where node_id=?', (url, self.node['node_id']))
                 except Exception,e:
                     gen_log.error(e)
                 finally:
