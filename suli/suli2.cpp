@@ -303,41 +303,38 @@ void suli_uart_init(UART_T *uart, int pin_tx, int pin_rx, uint32_t baud)
 #if defined(ESP8266)  //a
     if (pin_tx == 1 && pin_rx == 3)
     {
-        *uart = (Stream *)&Serial;
+        *uart = (HardwareSerial *)&Serial;
         Serial.begin(baud);
     } else if (pin_tx == 2)
     {
-        *uart = (Stream *)&Serial1;
+        *uart = (HardwareSerial *)&Serial1;
         Serial1.begin(baud);
-    } else
-    {
-        *uart = NULL;  //this will cause the program not passing the compiling
     }
 #else  //a
     if (pin_tx == 1 && pin_rx == 0)
     {
 #if defined(__AVR_ATmega32U4__)  //b
-        *uart = (Stream *)&Serial1;
+        *uart = (HardwareSerial *)&Serial1;
         Serial1.begin(baud);
 #else  //b
-        *uart = (Stream *)&Serial;
+        *uart = (HardwareSerial *)&Serial;
         Serial.begin(baud);
 #endif  //b
     }
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
     else if (pin_tx == 18 && pin_rx == 19)
     {
-        *uart = (Stream *)&Serial1;
+        *uart = (HardwareSerial *)&Serial1;
         Serial1.begin(baud);
     }
     else if (pin_tx == 16 && pin_rx == 17)
     {
-        *uart = (Stream *)&Serial2;
+        *uart = (HardwareSerial *)&Serial2;
         Serial2.begin(baud);
     }
     else if (pin_tx == 14 && pin_rx == 15)
     {
-        *uart = (Stream *)&Serial3;
+        *uart = (HardwareSerial *)&Serial3;
         Serial3.begin(baud);
     }
 #endif  //defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
@@ -345,9 +342,12 @@ void suli_uart_init(UART_T *uart, int pin_tx, int pin_rx, uint32_t baud)
 #endif  //a
 
 #if defined(ARDUINO_SOFTWARE_SERIAL)
-    SoftwareSerial *ser = new SoftwareSerial(pin_rx, pin_tx);
-    *uart = ser;
-    ser->begin(baud);
+    else
+    {
+        SoftwareSerial *ser = new SoftwareSerial(pin_rx, pin_tx);
+        *uart = (HardwareSerial *)ser;
+        ser->begin(baud);
+    }
 #endif
 
 }

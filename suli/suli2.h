@@ -504,7 +504,7 @@ inline int suli_uart_readable(UART_T *uart)
 //-------------- Arduino ---------------
 #elif defined(ARDUINO)
 
-typedef Stream* UART_T;
+typedef HardwareSerial *UART_T;
 
 /**
  * void suli_uart_init(UART_T *, int pin_tx, int pin_rx, uint32_t baud)
