@@ -49,13 +49,14 @@ from tornado import escape
 from tornado.options import define, options
 from tornado.log import *
 from tornado.concurrent import Future
+from tornado_cors import CorsMixin
 
 TOKEN_SECRET = "!@#$%^&*RG)))))))JM<==TTTT==>((((((&^HVFT767JJH"
 
 
-class BaseHandler(web.RequestHandler):
-    def set_default_headers(self):
-        self.set_header("Access-Control-Allow-Origin", "*")
+class BaseHandler(CorsMixin, web.RequestHandler):
+    CORS_ORIGIN = '*'
+    CORS_HEADERS = 'Content-Type'
 
     def get_current_user(self):
         user = None
@@ -109,7 +110,7 @@ class BaseHandler(web.RequestHandler):
                 self.write({'result':'ok'})
             else:
                 self.write(meta)
-                
+
 
     def write_error(self, status_code, **kwargs):
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
@@ -120,7 +121,10 @@ class BaseHandler(web.RequestHandler):
 
             self.finish({"error": self.failure_reason, "traceback": lines})
         else:
-            self.finish({"error": self.failure_reason})
+            try:
+              self.finish({"error": self.failure_reason})
+            except AttributeError:
+              self.finish({"error": "Unknown error occured."})
 
     def get_uuid (self):
         return str(uuid.uuid4())
@@ -210,7 +214,7 @@ class UserRetrievePasswordHandler(BaseHandler):
 
     def post(self):
         self.retrieve()
-        
+
     def retrieve(self):
         email = self.get_argument('email','')
         if not email:
@@ -255,9 +259,9 @@ class UserRetrievePasswordHandler(BaseHandler):
                 gen_log.info('INFO: Skip same email request!')
                 return
 
-        threading.Thread(target=self.email_sending_thread, name=thread_name, 
+        threading.Thread(target=self.email_sending_thread, name=thread_name,
             args=(email, new_password)).start()
-        
+
 
     def email_sending_thread (self, email, new_password):
         s = smtplib.SMTP_SSL(server_config.smtp_server)
@@ -293,15 +297,24 @@ IOT Team from Seeed
             return
         gen_log.info('sent new password %s to %s' % (new_password, email))
 
-        
+
 
 class UserLoginHandler(BaseHandler):
     def get (self):
         self.resp(403, "Please login to get the token")
 
     def post(self):
-        email = self.get_argument("email","")
-        passwd = self.get_argument("password","")
+        if self.request.body:
+            try:
+                json_data = json.loads(self.request.body)
+                email = json_data['email']
+                passwd = json_data['password']
+            except ValueError:
+                self.resp(400, 'Unable to parse JSON.')
+        else:
+            email = self.get_argument("email","")
+            passwd = self.get_argument("password","")
+
         if not email:
             self.resp(400, "Missing email information")
             return
@@ -853,7 +866,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
                     continue
                 t = arg[0]
                 name = arg[1]
-                
+
                 if fun[0] in methods_doc and name in methods_doc[fun[0]]:
                     comment = ", " + methods_doc[fun[0]][name]
                 else:
@@ -868,7 +881,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
             item['arguments_name'] = arguments_name
 
             item['brief'] = ""
-            if fun[0] in methods_doc and '@brief@' in methods_doc[fun[0]]: 
+            if fun[0] in methods_doc and '@brief@' in methods_doc[fun[0]]:
                 item['brief'] = methods_doc[fun[0]]['@brief@']
 
 
@@ -924,7 +937,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
             item['arguments_name'] = arguments_name
 
             item['brief'] = ""
-            if fun[0] in methods_doc and '@brief@' in methods_doc[fun[0]]: 
+            if fun[0] in methods_doc and '@brief@' in methods_doc[fun[0]]:
                 item['brief'] = methods_doc[fun[0]]['@brief@']
             item['uuid'] = self.get_uuid();
 
@@ -1074,7 +1087,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
                         gen_log.error(error_msg)
                         self.resp(404, error_msg)
                         return
-                    
+
                 else:  #if grove
                     error_msg = "Error, cannot find %s in grove drivers database file."%grove_instance_name
                     gen_log.error(error_msg)
@@ -1087,7 +1100,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
         #print data
         #print events
         #print node_key
-        page = self.render_string('resources.html', node_name = node_name, events = events, data = data, 
+        page = self.render_string('resources.html', node_name = node_name, events = events, data = data,
                                   node_key = node_key , url_base = self.vhost_url_base, ws_domain=ws_domain)
 
         #store the page html into database
@@ -1185,7 +1198,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                 else:
                     self.resp(400, "config json invalid!")
                     return
-                
+
                 with open("%s/connection_config.json" % user_build_dir, 'wr') as f:
                     f.write(json.dumps(json_connections))
             else:
@@ -1239,7 +1252,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                 self.send_notification(state)
                 return
 
-        threading.Thread(target=self.build_thread, name=thread_name, 
+        threading.Thread(target=self.build_thread, name=thread_name,
                          args=(build_phase, app_num, self.user_id, self.node_name, self.node_sn, json_drivers, json_connections)).start()
 
         #clear the possible old state recv during last ota process
@@ -1276,7 +1289,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
         gen_log.debug('build_thread for node %s app %s' % (node_name, app_num))
 
         set_build_verbose(False)
-        
+
         if not gen_and_build(build_phase, app_num, str(user_id), node_sn, node_name, '', json_drivers, json_connections):
             error_msg = get_error_msg()
             result = ("error", error_msg)
@@ -1343,7 +1356,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                 cmd = "OTA\r\n"
                 cmd = cmd.encode("ascii")
                 self.cur_conn.submit_cmd (cmd)
-                
+
                 yield gen.with_timeout(timedelta(seconds=10), self.cur_conn.ota_notify_done_future, io_loop=ioloop.IOLoop.current())
                 break
             except gen.TimeoutError:
@@ -1355,8 +1368,8 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                 self.send_notification(state)
                 return
             retries = retries + 1
-        
-        if retries >= 3:  
+
+        if retries >= 3:
             state = ("error", "Time out in notifying the node.")
             gen_log.info(state[1])
             self.send_notification(state)
@@ -1535,7 +1548,7 @@ class OTAFirmwareSendingHandler(BaseHandler):
                         gen_log.info("Node %d: firmware bin sent done." % node_id)
                         state = ('going', 'Verifying the firmware...')
                         self.send_notification(state)
-                        break  
+                        break
                 except Exception,e:
                     gen_log.error('node %d error when sending binary file: %s' % (node_id, str(e)))
                     state = ('error', 'Error when sending binary file. Please retry.')
@@ -1593,7 +1606,7 @@ class COTFHandler(NodeBaseHandler):
             self.resp(200, meta=output_json)
             return
 
-        
+
         self.resp(404, "API endpoint not found")
 
     @gen.coroutine
@@ -1650,12 +1663,8 @@ class COTFHandler(NodeBaseHandler):
 
             else:
                 self.resp(400, "Please post the request in json")
-                    
+
             return
 
-        
+
         self.resp(404, "API endpoint not found")
-
-
-
-

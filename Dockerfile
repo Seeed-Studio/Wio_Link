@@ -15,6 +15,7 @@ RUN pip install tornado
 RUN pip install PyJWT
 RUN pip install pycrypto
 RUN pip install PyYaml
+RUN pip install tornado-cors
 
 #add the files into image
 RUN mkdir -p /root/esp8266_iot_node
