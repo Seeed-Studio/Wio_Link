@@ -304,7 +304,7 @@ class UserLoginHandler(BaseHandler):
         self.resp(403, "Please login to get the token")
 
     def post(self):
-        if self.request.body:
+        if self.request.headers.get("content-type") and self.request.headers.get("content-type").find("json") > 0:
             try:
                 json_data = json.loads(self.request.body)
                 email = json_data['email']
