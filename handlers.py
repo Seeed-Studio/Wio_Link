@@ -707,7 +707,7 @@ class NodeSettingHandler(NodeReadWriteHandler):
             if not ips:
                 self.resp(400, "please specify the correct ip address for data exchange server")
                 return False
-            url = self.get_argument('dataxurl', '')
+            url = self.get_argument('dataxurl', '').rstrip('/')
             patt = r'^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:\d+)*(\/\w+\.\w+)*$'
             if not url or not re.match(patt, url):
                 self.resp(400, "please specify the correct url for data exchange server")
@@ -997,6 +997,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
             self.vhost_url_base = '%s://%s' % (protocol, self.request.host)
 
         self.vhost_url_base = self.get_argument("data_server", self.vhost_url_base)
+        self.vhost_url_base = self.vhost_url_base.rstrip('/')
         #print self.vhost_url_base
 
         patt = r'^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:\d+)*(\/\w+\.\w+)*$'

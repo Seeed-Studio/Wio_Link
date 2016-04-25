@@ -19,6 +19,7 @@
 #   Dependences: pip install tornado
 #                pip install PyJWT
 #                pip install pycrypto
+#                pip install tornado-cors
 
 from datetime import timedelta
 import socket
@@ -109,25 +110,25 @@ class DeviceConnection(object):
                 gen_log.debug("receive length != 64")
                 raise gen.Return(100) # length not match 64
 
-            if re.match(r'@\d\.\d', str1[0:4]):   
+            if re.match(r'@\d\.\d', str1[0:4]):
                 #new version firmware
                 self._wait_hello_future = self.stream.read_bytes(4) #read another 4bytes
                 str2 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future, io_loop=ioloop.IOLoop.current())
-            
+
                 self.idle_time = 0  #reset the idle time counter
-            
+
                 if len(str2) != 4:
                     self.stream.write("sorry\r\n")
                     yield gen.sleep(0.1)
                     self.kill_myself()
                     gen_log.debug("receive length != 68")
                     raise gen.Return(100) # length not match 64
-            
+
                 str1 += str2
                 self.fw_version = float(str1[1:4])
                 sn = str1[4:36]
                 sig = str1[36:68]
-            else:    
+            else:
                 #for version < 1.1
                 sn = str1[0:32]
                 sig = str1[32:64]
@@ -399,7 +400,7 @@ class DeviceConnection(object):
             else:
                 raise gen.Return((False, {"status":500, "msg":"unexpected error 1"}))
         except gen.Return:
-            raise            
+            raise
         except Exception,e:
             gen_log.error(e)
             raise gen.Return((False, {"status":500, "msg":"Node %s: %s" % (self.node_id, str(e))}))
