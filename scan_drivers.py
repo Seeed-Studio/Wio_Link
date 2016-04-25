@@ -45,9 +45,12 @@ def parse_one_driver_dir (driver_dir):
             files.append(f)
     return files
 
-def get_class_header_file (files):
+def get_class_header_file (files, dir_name):
     for f in files:
         if f.endswith(".h") and f.find("class") > -1:
+            return f
+    for f in files:
+        if f.endswith(".h") and f.find(dir_name) > -1:
             return f
     for f in files:
         if f.endswith(".h"):
@@ -170,7 +173,7 @@ def parse_class_header_file (file):
                 if len(pair) != 2:
                     return ("bad format in argument %s of read function %s" % (a, func[0]),{}, {})
                 args_in.append([pair[0], pair[1]])
-            elif a.find('char *') >= 0 and a.find('char **') < 0: 
+            elif a.find('char *') >= 0 and a.find('char **') < 0:
                 if args.index(a) != len(args)-1:
                     return ("para %s must be the last one, in read function %s" % (a, func[0]),{}, {})
                 name = a.replace('char *', '')
@@ -326,7 +329,7 @@ if __name__ == '__main__':
         if os.path.isdir(full_dir):
             print full_dir
             files = parse_one_driver_dir(full_dir)
-            class_file = get_class_header_file(files)
+            class_file = get_class_header_file(files,f)
             if class_file:
                 result, patterns, doc = parse_class_header_file(os.path.join(full_dir,class_file))
                 if patterns:
@@ -368,32 +371,32 @@ if __name__ == '__main__':
         open("%s/scan_status.json" % cur_dir,
              "w").write('{"result":"Failed", "msg":"%s"}' % (failed_msg))
         sys.exit(1)
-        
+
     skip_build_libs = '' if len(sys.argv) < 2 else sys.argv[1]
-    
+
     if skip_build_libs in ['-k', 'skip']:
         sys.exit(1)
-        
+
     user_build_dir = cur_dir + '/users_build/local_user_00000000000000000000'
-    
+
     #os.putenv("SPI_SPEED", "40")
     #os.putenv("SPI_MODE", "QIO")
     #os.putenv("SPI_SIZE_MAP", "6")
-    
+
     os.system('cd %s;cp -f ../../Makefile.template ./Makefile ' % user_build_dir)
-    
-    
+
+
     cmd = 'cd %s;make clean_libs;make libs|tee build.log 2>&1' % (user_build_dir)
     print '---- start to build the prebuilt libs ---'
     print cmd
     os.system(cmd)
-    
+
     content = open(user_build_dir+"/build.log", 'r').readlines()
     for line in content:
         if line.find("error:") > -1 or line.find("make:") > -1 or line.find("undefined reference to") > -1:
             print line
             sys.exit(1)
-    
-        
-    
+
+
+
 
