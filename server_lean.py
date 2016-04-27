@@ -19,7 +19,7 @@
 #   Dependences: pip install tornado
 #                pip install pycrypto
 #                pip install requests
-
+#                pip install tornado-cors
 
 
 
@@ -34,7 +34,7 @@ OTA_SERVER='china'
 
 #Set the address of the OTA server if OTA_SERVER is set to 'custom'
 #Only applies when OTA_SERVER='custom'
-CUSTOM_OTA_SERVER_ADDR='https://192.168.31.2'
+CUSTOM_OTA_SERVER_ADDR='http://192.168.x.x:8080'
 
 #Set the accounts which will be used when logging in the OTA server
 #Set each account with a key-value pair in which the pattern is email:password
@@ -66,6 +66,8 @@ from tornado.log import *
 from tornado.concurrent import Future
 from tornado.queues import Queue
 from tornado.locks import Semaphore, Condition
+from tornado_cors import CorsMixin
+
 
 
 define("mode", default="online", help="Running mode, online: will fetch node info from OTA server at start up.")
@@ -165,6 +167,13 @@ class DeviceConnection(object):
                 if n['node_sn'] == sn:
                     node = n
                     break
+
+            if not node and options.mode == 'online':
+                if fetch_node_info():
+                    for n in NODES_DATABASE:
+                        if n['node_sn'] == sn:
+                            node = n
+                            break
 
             if not node:
                 self.stream.write("sorry\r\n")
@@ -421,7 +430,7 @@ class DeviceConnection(object):
             else:
                 raise gen.Return((False, {"status":500, "msg":"unexpected error 1"}))
         except gen.Return:
-            raise            
+            raise
         except Exception,e:
             gen_log.error(e)
             raise gen.Return((False, {"status":500, "msg":"Node %s: %s" % (self.node_id, str(e))}))
@@ -474,7 +483,9 @@ class DeviceServer(TCPServer):
 
 
 
-class NodeBaseHandler(web.RequestHandler):
+class NodeBaseHandler(CorsMixin, web.RequestHandler):
+    CORS_ORIGIN = '*'
+    CORS_HEADERS = 'Content-Type'
 
     def initialize (self, conns, state_waiters, state_happened):
         self.conns = conns
@@ -523,22 +534,19 @@ class NodeBaseHandler(web.RequestHandler):
     408 Timed Out - The server can not communicate with device in a specified time out period.
     500 Server errors - It's usually caused by the unexpected errors of our side.
     '''
-    def resp (self, status_code, msg="",meta=None):
+    def resp (self, status_code, meta=None):
         if status_code >= 300:
-            self.failure_reason = msg
+            self.failure_reason = str(meta)
             raise web.HTTPError(status_code)
         else:
-            #response = {"status":status,"msg":msg}
-            #response = dict(response, **meta)
-            #self.write(response)
             if isinstance(meta, dict):
                 self.write(meta)
             elif isinstance(meta, list):
                 self.write({"data":meta})
-            elif isinstance(meta, str):
-                self.write(meta)
-            else:
+            elif not meta:
                 self.write({'result':'ok'})
+            else:
+                self.write(meta)
 
     def write_error(self, status_code, **kwargs):
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
@@ -810,7 +818,7 @@ def fetch_node_info():
 
     if len(ACCOUNTS) == 0:
         gen_log.error("Please configure the user account!!!")
-        sys.exit()
+        return False
 
     gen_log.info("Fetching the list of nodes...")
 
@@ -826,13 +834,13 @@ def fetch_node_info():
 
         except requests.exceptions.HTTPError,e:
             gen_log.error(e)
-            sys.exit()
+            return False
 
         #print login_result_obj
         if 'status' in login_result_obj and login_result_obj['status'] != 200:
             gen_log.error('error happened when logging in %s' % a)
             gen_log.info(login_result_obj['msg'])
-            sys.exit()
+            return False
 
 
         try:
@@ -844,23 +852,24 @@ def fetch_node_info():
 
         except requests.exceptions.HTTPError,e:
             gen_log.error(e)
-            sys.exit()
+            return False
 
         if 'status' in list_result_obj and list_result_obj['status'] != 200:
             gen_log.error('error happened when listing nodes for %s' % a)
             gen_log.info(list_result_obj['msg'])
-            sys.exit()
+            return False
 
         NODES_DATABASE += list_result_obj['nodes']
-
-    if len(NODES_DATABASE) == 0:
-        gen_log.error("No node!!!")
-        sys.exit()
+        for n in list_result_obj['nodes']:
+            if n not in NODES_DATABASE:
+                NODES_DATABASE.append(n)
 
     gen_log.info("fetch nodes done!")
     gen_log.debug(NODES_DATABASE)
     cur_dir = os.path.split(os.path.realpath(__file__))[0]
     open("%s/nodes_db_lean.json"%cur_dir,"w").write(json.dumps(NODES_DATABASE))
+
+    return True
 
 def main():
 
@@ -874,12 +883,15 @@ def main():
     cur_dir = os.path.split(os.path.realpath(__file__))[0]
 
     if options.mode == 'online':
-        fetch_node_info()
+        if not fetch_node_info():
+            sys.exit(1)
     else:
         db_file_path = '%s/nodes_db_lean.json' % cur_dir
 
         if not os.path.exists(db_file_path):
-            fetch_node_info()
+            if not fetch_node_info():
+                sys.exit(1)
+            #NODES_DATABASE = []
         else:
             NODES_DATABASE = json.load(open(db_file_path))
             gen_log.info('load nodes database from json done!')
@@ -894,8 +906,9 @@ def main():
     tcp_server = DeviceServer()
     tcp_server.listen(8000)
 
-    gen_log.info("server's running in lean mode ...")
-    gen_log.info("please request the APIs through http://your-ip-address:8080/v1/node/...")
+    mode = 'online' if options.mode == 'online' else 'offline'
+    gen_log.info("Server's running in %s mode ..." % mode)
+    gen_log.info('To use this server, please configure the "Exchange" server to http://your-ip-address:8080 in app.')
 
     ioloop.IOLoop.current().start()
 
