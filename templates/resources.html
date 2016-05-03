@@ -100,8 +100,8 @@
             This will reduce the current consumption of the board to ~10mA if it's powered by micro USB (due to the usb to serial chip CP2102).
             And the current will drop to ~1mA if the board is powered by battery.<br>
             The sleep will not be intermittently triggered. You need to call the sleep API every time you want the node to sleep.
-            You can continue to send GET/POST requests after a sleep command has been executed, the node will return a 404 status code and a message saying it's offline.
-            Then the node wake up and join the router within about 5 seconds. You do some stuff and put the node into sleep again.<br><br>
+            You can continue to send GET/POST requests after a sleep command has been executed, but the node will just return a 404 status code and a message saying it's offline.
+            After sleep time, the node will automatically wake up and join the router within about 5 seconds. You do some stuff and put the node into sleep again.<br><br>
             <strong>Note: Please take care of the initialization if any of the connected Grove modules needs a heat-up process.</strong></p>
     </div>
     <table class="table">
