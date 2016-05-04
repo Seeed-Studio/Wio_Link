@@ -23,12 +23,13 @@
 #ifndef __NETWORK111_H__
 #define __NETWORK111_H__
 
+#include "esp8266.h"
 #include "Arduino.h"
 #include "circular_buffer.h"
 
 enum
 {
-    WAIT_CONFIG, WAIT_GET_IP, DIED_IN_GET_IP, WAIT_CONN_DONE, DIED_IN_CONN, CONNECTED, WAIT_HELLO_DONE, KEEP_ALIVE, DIED_IN_HELLO
+    WAIT_CONFIG, WAIT_GET_IP, DIED_IN_GET_IP, WAIT_RESOLVE, DIED_IN_RESOLVE, WAIT_CONN_DONE, DIED_IN_CONN, CONNECTED, WAIT_HELLO_DONE, KEEP_ALIVE, DIED_IN_HELLO
 };
 
 enum
@@ -52,6 +53,11 @@ extern CircularBuffer *ota_stream_tx_buffer ;
 extern uint32_t keepalive_last_recv_time[2];
 
 bool extract_ip(uint8_t *input, uint8_t *output);
+void format_server_address(uint8_t *input, uint8_t *output);
 void fire_reboot(void *arg);
+
+///
+void start_resolving(void *arg);
+void dns_resolved_callback(const char *name, ip_addr_t *ipaddr, void *callback_arg);
 
 #endif

@@ -88,13 +88,13 @@ static void restart_network_initialization(void *arg);
 void network_status_indicate_timer_fn(void *arg);
 
 //////////////////////////////////////////////////////////////////////////////////////////
- 
+
 /**
- * format the SN string into safe-printing string when the node is first used 
- * because the contents in Flash is random before valid SN is written. 
- * 
- * @param input 
- * @param output 
+ * format the SN string into safe-printing string when the node is first used
+ * because the contents in Flash is random before valid SN is written.
+ *
+ * @param input
+ * @param output
  */
 static void format_sn(uint8_t *input, uint8_t *output)
 {
@@ -109,11 +109,36 @@ static void format_sn(uint8_t *input, uint8_t *output)
 }
 
 /**
+ * validate if the server address has been written
+ *
+ * @param input
+ *
+ * @return bool
+ */
+static bool validate_server_address(uint8_t *input)
+{
+    bool ret = true;
+
+    for (int i = 0; i < 100;i++)
+    {
+        if (*(input + i) == 0) break;
+
+        if (*(input + i) < 33 || *(input + i) > 126)
+        {
+            ret = false;
+            break;
+        }
+    }
+
+    return ret;
+}
+
+/**
  * extract a subset of a string which is cutted with a \t charactor
- * 
- * @param input 
- * @param len 
- * @param output 
+ *
+ * @param input
+ * @param len
+ * @param output
  */
 static uint8_t *extract_substr(uint8_t *input, uint8_t *output)
 {
@@ -122,9 +147,9 @@ static uint8_t *extract_substr(uint8_t *input, uint8_t *output)
     {
         return NULL;
     }
-    
+
     os_memcpy(output, input, (ptr - input));
-    
+
     char c = *(output + (ptr - input) - 1);
     if (c == '\r')
     {
@@ -138,18 +163,18 @@ static uint8_t *extract_substr(uint8_t *input, uint8_t *output)
 
 /**
  * extract parts of ip v4 from a string
- * 
- * @param input 
- * @param output 
- * 
- * @return bool 
+ *
+ * @param input
+ * @param output
+ *
+ * @return bool
  */
 bool extract_ip(uint8_t *input, uint8_t *output)
 {
     uint8_t *ptr;
     char num[4];
     int i = 0;
-    
+
     while ((ptr = os_strchr(input, '.')) != NULL)
     {
         i++;
@@ -158,7 +183,7 @@ bool extract_ip(uint8_t *input, uint8_t *output)
         *output++ = atoi((const char *)num);
         input = ptr + 1;
     }
-    
+
     if (i<3)
     {
         return false;
@@ -167,6 +192,27 @@ bool extract_ip(uint8_t *input, uint8_t *output)
         *output = atoi((const char *)input);
         return true;
     }
+}
+
+/**
+ * format the server address to make sure http/https not inside
+ *
+ * @param input
+ * @param output
+ */
+void format_server_address(uint8_t *input, uint8_t *output)
+{
+    uint8_t *ptr;
+
+    if ((ptr = os_strstr(input, "://")) != NULL)
+    {
+        input = ptr + 3;
+    }
+    if ((ptr = os_strchr(input, '/')) != NULL)
+    {
+        *ptr = '\0';
+    }
+    os_memcpy(output, input, os_strlen(input)+1);
 }
 
 /**
@@ -201,23 +247,23 @@ void fire_reboot(void *arg)
 
 /**
  * Parse the message and configure node
- *  
+ *
  * @param source - udp conn (0) or serial (1)
- * @param pusrdata 
- * @param length 
+ * @param pusrdata
+ * @param length
  */
 static void parse_config_message(int source, char *pusrdata, unsigned short length, char *hwaddr, char *ip)
 {
     if (pusrdata == NULL) {
         return;
     }
-    
+
     //Serial1.println(pusrdata);
-    
+
     uint8_t config_flag = *(EEPROM.getDataPtr() + EEP_OFFSET_CFG_FLAG);
 
     char *pkey;
-    
+
     if ((os_strstr(pusrdata, device_find_request) != NULL) ||
         (os_strstr(pusrdata, blank_device_find_request) != NULL && config_flag == 2))
     {
@@ -268,9 +314,9 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
         //ssid
         pkey += os_strlen(ap_config_req);
         uint8_t *ptr;
-        
+
         ptr = extract_substr(pkey, EEPROM.getDataPtr() + EEP_OFFSET_SSID);
-        
+
         if (ptr)
         {
             Serial1.printf("Recv ssid: %s \r\n", EEPROM.getDataPtr() + EEP_OFFSET_SSID);
@@ -279,10 +325,10 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
             Serial1.printf("Bad format: wifi ssid password setting.\r\n");
             return;
         }
-          
+
         //password
         ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OFFSET_PASSWORD);
-        
+
         if (ptr)
         {
             Serial1.printf("Recv password: %s  \r\n", EEPROM.getDataPtr() + EEP_OFFSET_PASSWORD);
@@ -291,10 +337,10 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
             Serial1.printf("Bad format: wifi ssid password setting.\r\n");
             return;
         }
-        
+
         //key
         ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OFFSET_KEY);
-        
+
         if (ptr)
         {
             Serial1.printf("Recv key: %s  \r\n", EEPROM.getDataPtr() + EEP_OFFSET_KEY);
@@ -303,10 +349,10 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
             Serial1.printf("Bad format: can not find key.\r\n");
             return;
         }
-        
+
         //sn
         ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OFFSET_SN);
-        
+
         if (ptr)
         {
             Serial1.printf("Recv sn: %s\r\n", EEPROM.getDataPtr() + EEP_OFFSET_SN);
@@ -315,45 +361,81 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
             Serial1.printf("Bad format: can not find sn.\r\n");
             return;
         }
-        
+
         //ip data
-        ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_DATA_SERVER_IP+4);
-        
-        if (ptr)
+        if (os_strstr(FW_VERSION, "1.2") != NULL)
         {
-            Serial1.printf("Recv data server ip: %s\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_IP+4);
-            if (!extract_ip(EEPROM.getDataPtr() + EEP_DATA_SERVER_IP + 4, EEPROM.getDataPtr() + EEP_DATA_SERVER_IP))
+            ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100);
+
+            if (ptr)
             {
-                Serial1.printf("Fail to extract data server ip.\r\n");
+                Serial1.printf("Recv data server addr: %s\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100);
+                format_server_address(EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100, EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR);
+                Serial1.printf("Formatted data server addr: %s.\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR);
+            } else
+            {
+                Serial1.printf("Bad format: can not find data server ip.\r\n");
+                return;
             }
+
         } else
         {
-            Serial1.printf("Bad format: can not find data server ip.\r\n");
-            return;
+            ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_DATA_SERVER_IP+4);
+
+            if (ptr)
+            {
+                Serial1.printf("Recv data server ip: %s\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_IP+4);
+                if (!extract_ip(EEPROM.getDataPtr() + EEP_DATA_SERVER_IP + 4, EEPROM.getDataPtr() + EEP_DATA_SERVER_IP))
+                {
+                    Serial1.printf("Fail to extract data server ip.\r\n");
+                }
+            } else
+            {
+                Serial1.printf("Bad format: can not find data server ip.\r\n");
+                return;
+            }
         }
 
+
         //ip ota
-        ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OTA_SERVER_IP+4);
-        
-        if (ptr)
+        if (os_strstr(FW_VERSION, "1.2") != NULL)
         {
-            Serial1.printf("Recv ota server ip: %s\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_IP+4);
-            if (!extract_ip(EEPROM.getDataPtr() + EEP_OTA_SERVER_IP + 4, EEPROM.getDataPtr() + EEP_OTA_SERVER_IP))
+            ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR + 100);
+
+            if (ptr)
             {
-                Serial1.printf("Fail to extract data server ip.\r\n");
+                Serial1.printf("Recv ota server addr: %s\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR+100);
+                format_server_address(EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR + 100, EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
+                Serial1.printf("Formatted ota server addr: %s.\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
+            } else
+            {
+                Serial1.printf("Bad format: can not find ota server ip.\r\n");
+                return;
             }
         } else
         {
-            Serial1.printf("Bad format: can not find ota server ip.\r\n");
-            return;
+            ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OTA_SERVER_IP+4);
+
+            if (ptr)
+            {
+                Serial1.printf("Recv ota server ip: %s\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_IP+4);
+                if (!extract_ip(EEPROM.getDataPtr() + EEP_OTA_SERVER_IP + 4, EEPROM.getDataPtr() + EEP_OTA_SERVER_IP))
+                {
+                    Serial1.printf("Fail to extract data server ip.\r\n");
+                }
+            } else
+            {
+                Serial1.printf("Bad format: can not find ota server ip.\r\n");
+                return;
+            }
         }
-        
-        
-        
+
+
+
         config_flag = 3;
         memset(EEPROM.getDataPtr() + EEP_OFFSET_CFG_FLAG, config_flag, 1);  //set the config flag
         EEPROM.commit();
-        
+
         if (source == 0)
         {
             espconn_sendto(&udp_conn, "ok\r\n", 4);
@@ -368,13 +450,13 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
         os_timer_disarm(&timer_conn[0]);
         os_timer_setfn(&timer_conn[0], fire_reboot, NULL);
         os_timer_arm(&timer_conn[0], 1000, 0);
-        
+
     }
 }
 
 /**
  * UDP packet recv callback
- * 
+ *
  * @param arg - the pointer to espconn struct
  * @param pusrdata - recved data
  * @param length - length of the recved data
@@ -385,30 +467,30 @@ static void udp_recv_cb(void *arg, char *pusrdata, unsigned short length)
     char hwaddr[7];
 
     struct ip_info ipconfig;
-    
+
     remot_info *premot = NULL;
 
     espconn_get_connection_info(conn, &premot, 0);  // get sender data (source IP)
     os_memcpy(udp_conn.proto.udp->remote_ip, premot->remote_ip, 4);
     udp_conn.proto.udp->remote_port = premot->remote_port;
-    
+
     wifi_get_macaddr(STATION_IF, hwaddr);
     hwaddr[6] = '\0';
-    
+
     // shows correct source IP
     Serial1.printf("UDP remote: " IPSTR ":%d\n",  IP2STR(udp_conn.proto.udp->remote_ip), udp_conn.proto.udp->remote_port);
-    
+
     // shows always the current device IP; never a broadcast address
     Serial1.printf("UDP local:  " IPSTR ":%d\n",  IP2STR(conn->proto.udp->local_ip), conn->proto.udp->local_port);
 
     parse_config_message(0, pusrdata, length, hwaddr, conn->proto.udp->local_ip);
-    
+
 }
 
 static void send_ap_item(void *arg)
 {
     uint32_t source = (uint32_t)arg;
-    
+
     if (ap_info_list)
     {
         char ssid[34];
@@ -417,8 +499,8 @@ static void send_ap_item(void *arg)
         __ap_info_t *last_ap = ap_info_list;
         ap_info_list = ap_info_list->next;
         free(last_ap);
-        
-        
+
+
         if (source == 0)
         {
             os_timer_disarm(&timer_tx[0]);
@@ -448,8 +530,8 @@ static void send_ap_item(void *arg)
 
 /**
  * The callback when data sent out via main UDP socket
- * 
- * @param arg 
+ *
+ * @param arg
  */
 static void udp_sent_cb(void *arg)
 {
@@ -458,7 +540,7 @@ static void udp_sent_cb(void *arg)
         os_timer_disarm(&timer_tx[0]);
         os_timer_setfn(&timer_tx[0], send_ap_item, 0);
         os_timer_arm(&timer_tx[0], 50, 0);
-    } 
+    }
 }
 
 
@@ -472,16 +554,16 @@ void local_udp_config_port_init(void)
     udp_conn.proto.udp->local_port = 1025;
     espconn_regist_recvcb(&udp_conn, udp_recv_cb);
     espconn_regist_sentcb(&udp_conn, udp_sent_cb);
-    
+
     espconn_create(&udp_conn);
 }
 
 /**
  * The callback for data receiving of the main TCP socket
- * 
- * @param arg 
- * @param pusrdata 
- * @param length 
+ *
+ * @param arg
+ * @param pusrdata
+ * @param length
  */
 static void connection_recv_cb(void *arg, char *pusrdata, unsigned short length)
 {
@@ -489,10 +571,10 @@ static void connection_recv_cb(void *arg, char *pusrdata, unsigned short length)
     int index = (pespconn == (&tcp_conn[0])) ? 0 : 1;
     CircularBuffer *rx_buffer = (index == 0) ? data_stream_rx_buffer : ota_stream_rx_buffer;
     CircularBuffer *tx_buffer = (index == 0) ? data_stream_tx_buffer : ota_stream_tx_buffer;
-    
+
     char *pstr = NULL;
     size_t room;
-    
+
     switch (conn_status[index])
     {
     case WAIT_HELLO_DONE:
@@ -552,8 +634,8 @@ static void connection_recv_cb(void *arg, char *pusrdata, unsigned short length)
 
 /**
  * The callback when data sent out via main TCP socket
- * 
- * @param arg 
+ *
+ * @param arg
  */
 static void connection_sent_cb(void *arg)
 {
@@ -562,18 +644,18 @@ static void connection_sent_cb(void *arg)
 
 /**
  * The callback when tx data has written into ESP8266's tx buffer
- * 
- * @param arg 
+ *
+ * @param arg
  */
 static void connection_tx_write_finish_cb(void *arg)
 {
     struct espconn *p_conn = (struct espconn *)arg;
     int index = (p_conn == (&tcp_conn[0])) ? 0 : 1;
-    
+
     CircularBuffer *tx_buffer = (index == 0) ? data_stream_tx_buffer : ota_stream_tx_buffer;
 
     if (!tx_buffer) return;
-    
+
     size_t size = tx_buffer->size();
 
     size_t size2 = size;
@@ -595,7 +677,7 @@ static void connection_tx_write_finish_cb(void *arg)
 
 /**
  * put a char into tx ring-buffer
- * 
+ *
  * @param c - char to send
  */
 int network_putc(CircularBuffer *tx_buffer, char c)
@@ -605,21 +687,21 @@ int network_putc(CircularBuffer *tx_buffer, char c)
 
 /**
  * put a block of data into tx ring-buffer
- * 
- * @param data 
- * @param len 
+ *
+ * @param data
+ * @param len
  */
 int network_puts(CircularBuffer *tx_buffer, char *data, int len)
 {
     int index = (tx_buffer == data_stream_tx_buffer) ? 0 : 1;
     int tx_threshold = (index == 0) ? 512 : 32;
-    
+
     if (conn_status[index] != KEEP_ALIVE || !tx_buffer) return E_NOT_READY;
     if (tcp_conn[index].state > ESPCONN_NONE)
     {
         size_t size_now;
         {
-            InterruptLock lock; 
+            InterruptLock lock;
             size_t room = tx_buffer->capacity() - tx_buffer->size();
             if (len > room)
             {
@@ -642,14 +724,14 @@ int network_puts(CircularBuffer *tx_buffer, char *data, int len)
 }
 
 /**
- * the function which will be called when timer_keepalive_check fired 
- * to check if the socket to server is alive 
+ * the function which will be called when timer_keepalive_check fired
+ * to check if the socket to server is alive
  */
 static void keepalive_check_timer_fn(void *arg)
 {
     struct espconn *p_conn = (struct espconn *)arg;
     int index = (p_conn == (&tcp_conn[0])) ? 0 : 1;
-    
+
     if (millis() - keepalive_last_recv_time[index] > 70000)
     {
         Serial1.printf("%s conn no longer alive, reconnect...\r\n", conn_name[index]);
@@ -662,14 +744,14 @@ static void keepalive_check_timer_fn(void *arg)
 
 /**
  * Timer function for checking the hello response from server
- * 
- * @param arg 
+ *
+ * @param arg
  */
 static void connection_confirm_hello(void *arg)
 {
     struct espconn *p_conn = (struct espconn *)arg;
     int index = (p_conn == (&tcp_conn[0])) ? 0 : 1;
-    
+
     Serial1.printf("%s conn confirm hello: %d \n", conn_name[index], get_hello[index]);
 
     if (get_hello[index] == 1)
@@ -680,9 +762,9 @@ static void connection_confirm_hello(void *arg)
         os_timer_disarm(&timer_keepalive_check[index]);
         os_timer_setfn(&timer_keepalive_check[index], keepalive_check_timer_fn, p_conn);
         os_timer_arm(&timer_keepalive_check[index], 1000, 0);
-        
+
         uint8_t ota_result_flag = *(EEPROM.getDataPtr() + EEP_OTA_RESULT_FLAG);
-        
+
         if (ota_result_flag == 1 && index == 1)
         {
             memset(EEPROM.getDataPtr() + EEP_OTA_RESULT_FLAG, 0, 1);
@@ -723,8 +805,8 @@ static void connection_confirm_hello(void *arg)
                 os_timer_arm(&timer_conn[1], 1000, 0);
                 return;
             }
-        } 
-        
+        }
+
         if (confirm_hello_retry_cnt[index] % 10 == 0)
         {
             os_timer_setfn(&timer_confirm_hello[index], connection_send_hello, p_conn);
@@ -747,7 +829,7 @@ void connection_send_hello(void *arg)
 {
     struct espconn *pespconn = (struct espconn *)arg;
     int index = (pespconn == (&tcp_conn[0])) ? 0 : 1;
-    
+
     uint8_t hmac_hash[32];
 
     uint8_t *buff = os_malloc(4 + SN_LEN + 32);
@@ -778,8 +860,8 @@ void connection_send_hello(void *arg)
 
 /**
  * The callback when the TCP socket has been open and connected with server
- * 
- * @param arg 
+ *
+ * @param arg
  */
 void connection_connected_callback(void *arg)
 {
@@ -807,15 +889,15 @@ void connection_connected_callback(void *arg)
 
 /**
  * The callback when some error or exception happened with the TCP socket
- * 
- * @param arg 
- * @param err 
+ *
+ * @param arg
+ * @param err
  */
 void connection_reconnect_callback(void *arg, int8_t err)
 {
     struct espconn *p_conn = (struct espconn *)arg;
     int index = (p_conn == (&tcp_conn[0])) ? 0 : 1;
-    
+
     Serial1.printf("%s conn err: %d, will reconnect...\n", conn_name[index], err);
 
     os_timer_disarm(&timer_conn[index]);
@@ -832,7 +914,7 @@ static void connection_confirm_timer_fn(void *arg)
 {
     struct espconn *p_conn = (struct espconn *)arg;
     int index = (p_conn == (&tcp_conn[0])) ? 0 : 1;
-    
+
     if (conn_status[index] == WAIT_CONN_DONE)
     {
         espconn_disconnect(&tcp_conn[index]);
@@ -847,12 +929,13 @@ static void connection_confirm_timer_fn(void *arg)
  */
 void connection_init(void *arg)
 {
+
     struct espconn *p_conn = (struct espconn *)arg;
     int index = (p_conn == (&tcp_conn[0])) ? 0 : 1;
     char *server_ip = (index == 0) ? (EEPROM.getDataPtr() + EEP_DATA_SERVER_IP) : (EEPROM.getDataPtr() + EEP_OTA_SERVER_IP);
-    
+
     Serial1.printf("%s connection init.\r\n", conn_name[index]);
-    
+
     //cant connect to server after 1min, maybe should re-join the router to renew the IP too.
     if (++conn_retry_cnt[index] > 60)
     {
@@ -881,16 +964,88 @@ void connection_init(void *arg)
     espconn_regist_connectcb(&tcp_conn[index], connection_connected_callback);
     espconn_regist_reconcb(&tcp_conn[index], connection_reconnect_callback);
     espconn_connect(&tcp_conn[index]);
-        
+
     os_timer_disarm(&timer_conn[index]);
     os_timer_setfn(&timer_conn[index], connection_confirm_timer_fn, &tcp_conn[index]);
     os_timer_arm(&timer_conn[index], 10000, 0);
 }
 
+void dns_resolved_callback(const char *name, ip_addr_t *ipaddr, void *callback_arg)
+{
+    struct espconn *p_conn = (struct espconn *)callback_arg;
+    int index = (p_conn == (&tcp_conn[0])) ? 0 : 1;
+    char *server_addr = (index == 0) ? (EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR) : (EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
+    char *server_ip = (index == 0) ? (EEPROM.getDataPtr() + EEP_DATA_SERVER_IP) : (EEPROM.getDataPtr() + EEP_OTA_SERVER_IP);
+
+    if (ipaddr == NULL)
+    {
+        Serial1.printf("%s Resolve failed\r\n", name);
+    } else
+    {
+        Serial1.printf("%s Resolved IP: " IPSTR "\r\n", name, IP2STR(&ipaddr->addr));
+        os_memcpy(server_ip, &ipaddr->addr, 4);
+    }
+
+    if (index == 0)
+    {
+        os_timer_disarm(&timer_conn[0]);
+        os_timer_setfn(&timer_conn[0], &start_resolving, &tcp_conn[1]);
+        os_timer_arm(&timer_conn[0], 1, 0);
+    } else
+    {
+        conn_status[0] = WAIT_CONN_DONE;
+        conn_status[1] = WAIT_CONN_DONE;
+
+        /* establish the connection with server */
+        connection_init(&tcp_conn[0]);
+        connection_init(&tcp_conn[1]);
+    }
+
+
+}
+
+/**
+ * start resolving the ip address of ota / data server
+ *
+ */
+void start_resolving(void *arg)
+{
+    struct espconn *p_conn = (struct espconn *)arg;
+    int index = (p_conn == (&tcp_conn[0])) ? 0 : 1;
+    char *server_addr = (index == 0) ? (EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR) : (EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
+    char *server_ip = (index == 0) ? (EEPROM.getDataPtr() + EEP_DATA_SERVER_IP) : (EEPROM.getDataPtr() + EEP_OTA_SERVER_IP);
+
+
+    Serial1.printf("Resolving %s...\r\n", server_addr);
+
+    ip_addr_t addr;
+    err_t err = espconn_gethostbyname(arg, server_addr, &addr, &dns_resolved_callback);
+    if (err == ESPCONN_OK)
+    {
+        Serial1.printf("Resolved IP: " IPSTR "\r\n", IP2STR(&addr.addr));
+        os_memcpy(server_ip, &addr.addr, 4);
+
+        if (index == 0)
+        {
+            os_timer_disarm(&timer_conn[0]);
+            os_timer_setfn(&timer_conn[0], &start_resolving, &tcp_conn[1]);
+            os_timer_arm(&timer_conn[0], 1, 0);
+        } else
+        {
+            conn_status[0] = WAIT_CONN_DONE;
+            conn_status[1] = WAIT_CONN_DONE;
+
+            /* establish the connection with server */
+            connection_init(&tcp_conn[0]);
+            connection_init(&tcp_conn[1]);
+        }
+    }
+}
+
 /**
  * timer function for checking if the ip address has been get
- * 
- * @param arg 
+ *
+ * @param arg
  */
 static void check_getting_ip_address(void *arg)
 {
@@ -903,7 +1058,7 @@ static void check_getting_ip_address(void *arg)
         "GOT_IP"
     };
     uint8_t connect_status = wifi_station_get_connect_status();
-    
+
     if (connect_status != STATION_GOT_IP)
     {
         Serial1.printf("Waiting ip, state: %s\n", get_ip_state[connect_status]);
@@ -917,9 +1072,9 @@ static void check_getting_ip_address(void *arg)
         }
         return;
     }
-    
+
     os_timer_disarm(&timer_conn[0]);
-    
+
     struct ip_info ip;
     wifi_get_ip_info(STATION_IF, &ip);
     Serial1.printf("Done. IP: " IPSTR "\r\n", IP2STR(&ip.ip));
@@ -927,18 +1082,30 @@ static void check_getting_ip_address(void *arg)
     /* open the config interface at UDP port 1025 */
     local_udp_config_port_init();
 
-    conn_status[0] = WAIT_CONN_DONE;
-    conn_status[1] = WAIT_CONN_DONE;
+    bool valid_server_addr1 = validate_server_address(EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR);
+    bool valid_server_addr2 = validate_server_address(EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
+    if (os_strstr(FW_VERSION, "1.2") != NULL && valid_server_addr1 && valid_server_addr2)
+    {
+        conn_status[0] = WAIT_RESOLVE;
+        conn_status[1] = WAIT_RESOLVE;
 
-    /* establish the connection with server */
-    connection_init(&tcp_conn[0]);
-    connection_init(&tcp_conn[1]);
+        start_resolving(&tcp_conn[0]);
+
+    } else
+    {
+        conn_status[0] = WAIT_CONN_DONE;
+        conn_status[1] = WAIT_CONN_DONE;
+
+        /* establish the connection with server */
+        connection_init(&tcp_conn[0]);
+        connection_init(&tcp_conn[1]);
+    }
 }
 
 /**
- * re-init the network 
- * 
- * @param arg 
+ * re-init the network
+ *
+ * @param arg
  */
 static void restart_network_initialization(void *arg)
 {
@@ -951,13 +1118,13 @@ static void restart_network_initialization(void *arg)
 void network_normal_mode(int config_flag)
 {
     Serial1.printf("start to establish network connection.\r\n");
-    
+
     /* enable the station mode */
     wifi_set_opmode(0x01);
 
     struct station_config config;
     wifi_station_get_config(&config);
-    
+
     if (config_flag >= 2)
     {
         if (config_flag == 3)
@@ -966,13 +1133,13 @@ void network_normal_mode(int config_flag)
             os_strncpy(config.password, EEPROM.getDataPtr() + EEP_OFFSET_PASSWORD, 64);
             wifi_station_set_config(&config);
         }
-        
+
         memset(EEPROM.getDataPtr() + EEP_OFFSET_CFG_FLAG, 0, 1);  //clear the config flag
         EEPROM.commit();
 
         Serial1.printf("Config flag has been reset to 0.\r\n");
     }
-    
+
     Serial1.printf("connect to ssid %s with passwd %s\r\n", config.ssid, config.password);
     wifi_station_disconnect();
     wifi_station_connect(); //connect with saved config in flash
@@ -982,13 +1149,13 @@ void network_normal_mode(int config_flag)
     os_timer_disarm(&timer_conn[0]);
     os_timer_setfn(&timer_conn[0], check_getting_ip_address, NULL);
     os_timer_arm(&timer_conn[0], 1000, 1);
-    
+
     /* after here, run into user's setup function. checking ip and connecting server will be done in background. */
 }
 
-static void ap_scan_done(void *arg, STATUS status) { 
-    if (status == OK) { 
-        struct bss_info *bss_link = (struct bss_info *)arg; 
+static void ap_scan_done(void *arg, STATUS status) {
+    if (status == OK) {
+        struct bss_info *bss_link = (struct bss_info *)arg;
         int cnt = 0;
         __ap_info_t *ap_last;
         while (bss_link)
@@ -1026,14 +1193,14 @@ static void ap_scan_done(void *arg, STATUS status) {
 void network_config_mode()
 {
     Serial.begin(115200);
-    
+
     Serial1.printf("enter AP mode ... \r\n");
-    
+
     memset(EEPROM.getDataPtr() + EEP_OFFSET_CFG_FLAG, 2, 1);  //upgrade the config flag
     EEPROM.commit();
 
     wifi_set_opmode(0x03); //softAP + Station mode
-    
+
     struct softap_config *config = (struct softap_config *)malloc(sizeof(struct softap_config));
     char hwaddr[7];
     char ssid[16];
@@ -1044,17 +1211,17 @@ void network_config_mode()
     memcpy(config->ssid, ssid, 15);
     config->ssid_len = strlen(config->ssid);
     wifi_softap_set_config(config);
-    
+
     Serial.printf("SSID: %s\r\n", config->ssid);
     Serial1.printf("SSID: %s\r\n", config->ssid);
 
     /* open the config interface at UDP port 1025 */
     local_udp_config_port_init();
-    
+
     /* list connected devices */
     uint32_t start_time0 = millis();
     struct station_info * station;
-    char msg[256] = { 0 };
+    char msg[512] = { 0 };
     int index = 0;
     while (1)
     {
@@ -1066,7 +1233,7 @@ void network_config_mode()
         }
         while (Serial.available() > 0)
         {
-            if (index > 254) index = 0;
+            if (index > 510) index = 0;
             msg[index++] = (char)Serial.read();
             delay(0);
             if (os_strstr(msg, "\r\n") != NULL)
@@ -1080,7 +1247,7 @@ void network_config_mode()
         if (index == 9999)
         {
             Serial1.println(msg);
-            
+
             wifi_get_macaddr(STATION_IF, hwaddr);
             hwaddr[6] = '\0';
             parse_config_message(1, msg, os_strlen(msg), hwaddr, "");
@@ -1099,7 +1266,7 @@ void network_setup()
 #if ENABLE_DEBUG_ON_UART1
     Serial1.begin(74880);
     //Serial1.setDebugOutput(true);
-    Serial1.println("\n\n"); 
+    Serial1.println("\n\n");
 #else
     pinMode(STATUS_LED, OUTPUT);
     digitalWrite(STATUS_LED, 1);
@@ -1120,43 +1287,43 @@ void network_setup()
         "SOFT_RESTART",
         "DEEP_SLEEP_AWAKE",
         "EXT_SYS"
-    }; 
+    };
     Serial1.printf("Boot reason: %s\n", boot_reason_desc[reason->reason]);
     Serial1.printf("Node name: %s\n", NODE_NAME);
-    Serial1.printf("FW version: %s\n", FW_VERSION); 
+    Serial1.printf("FW version: %s\n", FW_VERSION);
     Serial1.printf("Chip id: 0x%08x\n", system_get_chip_id());
-    
+
     Serial1.print("Free heap size: ");
     Serial1.println(system_get_free_heap_size());
-    
+
     /* get key and sn */
     char buff[33];
-        
+
     //os_memcpy(EEPROM.getDataPtr() + EEP_OFFSET_KEY, "9ed12049da8c1eb42a9872bb27cfb02e", 32);
     format_sn(EEPROM.getDataPtr() + EEP_OFFSET_KEY, (uint8_t *)buff);
     Serial1.printf("Private key: %s\n", buff);
-    
+
     //os_memcpy(EEPROM.getDataPtr() + EEP_OFFSET_SN, "52f4370b14aedea33416db677b1c5726", 32);
     format_sn(EEPROM.getDataPtr() + EEP_OFFSET_SN, (uint8_t *)buff);
     Serial1.printf("Node SN: %s\n", buff);
-    
+
     //
     Serial1.printf("Data server: " IPSTR "\r\n", IP2STR((uint32 *)(EEPROM.getDataPtr() + EEP_DATA_SERVER_IP)));
 
     Serial1.printf("OTA server: " IPSTR "\r\n", IP2STR((uint32 *)(EEPROM.getDataPtr() + EEP_OTA_SERVER_IP)));
-    
+
     Serial1.printf("OTA result flag: %d\r\n", *(EEPROM.getDataPtr() + EEP_OTA_RESULT_FLAG));
-    
+
     Serial1.flush();
     delay(1000);  //should delay some time to wait all settled before wifi_* API calls.
-    
+
     //start the forever timer to drive the status leds
-    
+
 #if !ENABLE_DEBUG_ON_UART1
     os_timer_disarm(&timer_network_status_indicate[0]);
     os_timer_setfn(&timer_network_status_indicate[0], network_status_indicate_timer_fn, NULL);
     os_timer_arm(&timer_network_status_indicate[0], 1, false);
-#endif    
+#endif
 
     /* get the smart config flag */
     uint8_t config_flag = *(EEPROM.getDataPtr() + EEP_OFFSET_CFG_FLAG);
@@ -1216,6 +1383,7 @@ void network_status_indicate_timer_fn(void *arg)
         analogWrite(STATUS_LED, 1023-blink_pattern_cnt);
         break;
     case WAIT_GET_IP:
+    case WAIT_RESOLVE:
         if (conn_status[0] != last_main_status)
         {
             os_timer_arm(&timer_network_status_indicate[0], 50, false);
@@ -1234,6 +1402,7 @@ void network_status_indicate_timer_fn(void *arg)
         }
         break;
     case DIED_IN_GET_IP:
+    case DIED_IN_RESOLVE:
         digitalWrite(STATUS_LED, 0);
         break;
     case WAIT_CONN_DONE:

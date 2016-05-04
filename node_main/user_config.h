@@ -1,7 +1,7 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
-#define FW_VERSION                  "1.1"
+#define FW_VERSION                  "1.2"
 
 #ifndef FUNCTION_KEY
 #define FUNCTION_KEY                0
@@ -36,6 +36,8 @@
 #define EEP_DATA_SERVER_IP          400
 #define EEP_OTA_SERVER_IP           432
 #define EEP_OTA_RESULT_FLAG         464
+#define EEP_DATA_SERVER_ADDR        500
+#define EEP_OTA_SERVER_ADDR         700
 
 
 #endif
