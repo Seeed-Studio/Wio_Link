@@ -38,6 +38,7 @@ enum
 };
 extern uint8_t conn_status[2];
 extern struct espconn tcp_conn[2];
+extern bool should_enter_user_loop;
 
 void network_setup();
 void network_normal_mode(int config_flag);

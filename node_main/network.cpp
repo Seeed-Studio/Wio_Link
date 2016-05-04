@@ -33,6 +33,7 @@
 
 static uint8_t get_ip_retry_cnt = 0;
 uint8_t conn_status[2] = { WAIT_GET_IP, WAIT_GET_IP };
+bool should_enter_user_loop = false;
 static int conn_retry_cnt[2] = {0};
 static uint16_t conn_retry_delay[2] = {1000, 1000};
 static uint8_t get_hello[2] = {0};
@@ -42,6 +43,7 @@ uint32_t keepalive_last_recv_time[2] = {0};
 static struct espconn udp_conn;
 struct espconn tcp_conn[2];
 static struct _esp_tcp tcp_conn_tcp_s[2];
+static os_timer_t timer_get_ip;
 static os_timer_t timer_conn[2];
 static os_timer_t timer_network_status_indicate[2];
 static os_timer_t timer_confirm_hello[2];
@@ -780,6 +782,9 @@ static void connection_confirm_hello(void *arg)
             network_puts(ota_stream_tx_buffer, "{\"msg_type\":\"ota_result\",\"msg\":\"fail\"}\r\n", 40);
         }
 
+        os_timer_disarm(&timer_get_ip);
+        os_timer_arm(&timer_get_ip, 100, 0);
+
     } else if (get_hello[index] == 2)
     {
         Serial1.printf("%s conn handshake: sorry from server\n", conn_name[index]);
@@ -1103,6 +1108,16 @@ static void check_getting_ip_address(void *arg)
 }
 
 /**
+ * 10sec timeout when connecting to server, should enter user loop anyway
+ *
+ * @param arg
+ */
+static void timeout_connecting_server(void *arg)
+{
+    should_enter_user_loop = true;
+}
+
+/**
  * re-init the network
  *
  * @param arg
@@ -1150,7 +1165,10 @@ void network_normal_mode(int config_flag)
     os_timer_setfn(&timer_conn[0], check_getting_ip_address, NULL);
     os_timer_arm(&timer_conn[0], 1000, 1);
 
-    /* after here, run into user's setup function. checking ip and connecting server will be done in background. */
+    /* wait 10 sec to connect server, or the user setup and loop will be involved */
+    os_timer_disarm(&timer_get_ip);
+    os_timer_setfn(&timer_get_ip, timeout_connecting_server, NULL);
+    os_timer_arm(&timer_get_ip, 10000, 1);
 }
 
 static void ap_scan_done(void *arg, STATUS status) {
