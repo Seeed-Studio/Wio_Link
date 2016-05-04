@@ -473,6 +473,7 @@ class myApplication(web.Application):
         (r"/v1/user/changepassword[/]?", UserChangePasswordHandler),
         (r"/v1/user/retrievepassword[/]?", UserRetrievePasswordHandler),
         (r"/v1/user/login[/]?", UserLoginHandler),
+        (r"/v1/ext_users(.*)", ExtUsersHandler),
         (r"/v1/scan/drivers[/]?", DriversHandler),
         (r"/v1/scan/status[/]?", DriversStatusHandler),
         (r"/v1/boards/list[/]?", BoardsListHandler),
@@ -500,8 +501,7 @@ class myApplication(web.Application):
         except:
             pass
 
-        web.Application.__init__(self, handlers, debug=auto_reload_for_debug, login_url="/v1/user/login",
-            template_path = 'templates')
+        web.Application.__init__(self, handlers, debug=auto_reload_for_debug, template_path = 'templates')
 
 class myApplication_OTA(web.Application):
 
@@ -538,7 +538,7 @@ def main():
         sys.exit(1)
 
     app = myApplication(conn, cur)
-    http_server = HTTPServer(app)
+    http_server = HTTPServer(app, xheaders=True)
     http_server.listen(8080)
 
     app2 = myApplication_OTA(conn, cur)

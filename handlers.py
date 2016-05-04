@@ -83,7 +83,7 @@ class BaseHandler(CorsMixin, web.RequestHandler):
         if not user:
             self.resp(403,"Please login to get the token")
         else:
-            gen_log.info("get current user, id: %d, email: %s" % (user['user_id'], user['email']))
+            gen_log.info("get current user, id: %s, email: %s" % (user['user_id'], user['email']))
 
         return user
 
@@ -129,6 +129,9 @@ class BaseHandler(CorsMixin, web.RequestHandler):
     def get_uuid (self):
         return str(uuid.uuid4())
 
+    def gen_uuid_without_dash(self):
+        return str(uuid.uuid1()).replace('-','')
+
     def gen_token (self, email):
         return jwt.encode({'email': email,'uuid':self.get_uuid()}, TOKEN_SECRET, algorithm='HS256').split(".")[2]
 
@@ -149,7 +152,6 @@ class UserCreateHandler(BaseHandler):
         self.resp(404, "Please post to this url")
 
     def post(self):
-        print self.request.body
         email = self.get_argument("email","")
         passwd = self.get_argument("password","")
         if not email:
@@ -170,7 +172,7 @@ class UserCreateHandler(BaseHandler):
             if len(rows) > 0:
                 self.resp(400, "This email already registered")
                 return
-            cur.execute("INSERT INTO users(email,pwd,token) VALUES(?,?,?)", (email, md5.new(passwd).hexdigest(), token))
+            cur.execute("INSERT INTO users(user_id,email,pwd,token,created_at) VALUES(?,?,?,?,datetime('now'))", (self.gen_uuid_without_dash(), email, md5.new(passwd).hexdigest(), token))
         except web.HTTPError:
             raise
         except Exception,e:
@@ -180,6 +182,50 @@ class UserCreateHandler(BaseHandler):
             self.application.conn.commit()
 
         self.resp(200, meta={"token": token})
+
+
+class ExtUsersHandler(BaseHandler):
+    def get (self, uri):
+        print uri
+        self.resp(404, "Please post to this url")
+
+    def post(self, uri):
+        email = self.get_argument("email","")
+        bind_id = self.get_argument("bind_id","")
+        bind_region = self.get_argument("bind_region","")
+        token = self.get_argument("token","")
+        secret = self.get_argument("secret","")
+
+        if secret != TOKEN_SECRET:
+            self.resp(403, "Wrong secret")
+            return
+        if not bind_id:
+            self.resp(400, "Missing bind_id information")
+            return
+        if not token:
+            self.resp(400, "Missing token information")
+            return
+
+        cur = self.application.cur
+
+        try:
+            cur.execute('SELECT * FROM users WHERE ext_bind_id=?', (bind_id,))
+            rows = cur.fetchall()
+            if len(rows) > 0:
+                cur.execute('UPDATE users SET email=?,token=? WHERE ext_bind_id=?', (email,token, bind_id))
+            else:
+                cur.execute("INSERT INTO users(user_id,email,token,ext_bind_id,ext_bind_region,created_at) VALUES(?,?,?,?,?,datetime('now'))",
+                            (self.gen_uuid_without_dash(), email, token, bind_id, bind_region))
+        except web.HTTPError:
+            raise
+        except Exception,e:
+            self.resp(500,str(e))
+            return
+        finally:
+            self.application.conn.commit()
+
+        self.resp(200)
+
 
 class UserChangePasswordHandler(BaseHandler):
     def get (self):
@@ -301,7 +347,7 @@ IOT Team from Seeed
 
 class UserLoginHandler(BaseHandler):
     def get (self):
-        self.resp(403, "Please login to get the token")
+        self.resp(403, "Please post to this url")
 
     def post(self):
         if self.request.headers.get("content-type") and self.request.headers.get("content-type").find("json") > 0:
@@ -402,12 +448,13 @@ class NodeCreateHandler(BaseHandler):
         user = self.current_user
         email = user["email"]
         user_id = user["user_id"]
+        node_id = self.gen_uuid_without_dash()
         node_sn = md5.new(email+self.get_uuid()).hexdigest()
         node_key = md5.new(self.gen_token(email)).hexdigest()  #we need the key to be 32bytes long too
 
         cur = self.application.cur
         try:
-            cur.execute("INSERT INTO nodes(user_id,node_sn,name,private_key,board) VALUES(?,?,?,?,?)", (user_id, node_sn,node_name, node_key, board))
+            cur.execute("INSERT INTO nodes(node_id,user_id,node_sn,name,private_key,board) VALUES(?,?,?,?,?,?)", (node_id, user_id, node_sn,node_name, node_key, board))
             self.resp(200, meta={"node_sn":node_sn,"node_key": node_key})
         except Exception,e:
             self.resp(500,str(e))
@@ -552,7 +599,7 @@ class NodeBaseHandler(BaseHandler):
         if not node:
             self.resp(403,"Please attach the valid node token (not the user token)")
         else:
-            gen_log.info("get current node, id: %d, name: %s" % (node['node_id'],node["name"]))
+            gen_log.info("get current node, id: %s, name: %s" % (node['node_id'],node["name"]))
 
         return node
 
@@ -721,7 +768,7 @@ class NodeSettingHandler(NodeReadWriteHandler):
             url = self.get_argument('dataxurl', '')
             if url:
                 #print url
-                gen_log.debug('node %d want to change data x server to %s' % (self.node['node_id'], url))
+                gen_log.debug('node %s want to change data x server to %s' % (self.node['node_id'], url))
                 try:
                     cur = self.application.cur
                     cur.execute('update nodes set dataxserver=? where node_id=?', (url, self.node['node_id']))
@@ -1048,11 +1095,11 @@ class NodeGetResourcesHandler(NodeBaseHandler):
 
         if resource:
             if chksum_config == resource['chksum_config'] and chksum_drv_db == resource['chksum_dbjson']:
-                gen_log.info("echo the cached page for node_id: %d" % node_id)
+                gen_log.info("echo the cached page for node_id: %s" % node_id)
                 self.write(resource['render_content'])
                 return
 
-        gen_log.info("re-render the resource page for node_id: %d" % node_id)
+        gen_log.info("re-render the resource page for node_id: %s" % node_id)
 
         #else render new resource page
         #load the yaml file into object
@@ -1262,9 +1309,9 @@ class FirmwareBuildingHandler(NodeBaseHandler):
                 ok, resp = yield conn.submit_and_wait_resp (cmd, "resp_app")
                 if ok and resp['msg'] in [1,2,'1','2']:
                     app_num = '1' if resp['msg'] in [2,'2'] else '2'
-                    gen_log.info('Get to know node %d is running app %s' % (self.node_id, resp['msg']))
+                    gen_log.info('Get to know node %s is running app %s' % (self.node_id, resp['msg']))
                 else:
-                    gen_log.warn('Failed while getting app number for node %d: %s' % (self.node_id, str(resp)))
+                    gen_log.warn('Failed while getting app number for node %s: %s' % (self.node_id, str(resp)))
             except Exception,e:
                 gen_log.error(e)
 
@@ -1508,7 +1555,7 @@ class OTAFirmwareSendingHandler(BaseHandler):
         if not node:
             self.resp(403,"Please attach the valid node sn")
         else:
-            gen_log.info("get current node, id: %d, name: %s" % (node['node_id'],node["name"]))
+            gen_log.info("get current node, id: %s, name: %s" % (node['node_id'],node["name"]))
 
         return node
 
@@ -1572,12 +1619,12 @@ class OTAFirmwareSendingHandler(BaseHandler):
                         self.write(chunk)
                         yield self.flush()
                     else:
-                        gen_log.info("Node %d: firmware bin sent done." % node_id)
+                        gen_log.info("Node %s: firmware bin sent done." % node_id)
                         state = ('going', 'Verifying the firmware...')
                         self.send_notification(state)
                         break
                 except Exception,e:
-                    gen_log.error('node %d error when sending binary file: %s' % (node_id, str(e)))
+                    gen_log.error('node %s error when sending binary file: %s' % (node_id, str(e)))
                     state = ('error', 'Error when sending binary file. Please retry.')
                     self.send_notification(state)
                     self.clear()
