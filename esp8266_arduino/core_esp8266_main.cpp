@@ -46,9 +46,6 @@ void initVariant() __attribute__((weak));
 void initVariant() {
 }
 
-extern void loop();
-extern void setup();
-
 void preloop_update_frequency() __attribute__((weak));
 void preloop_update_frequency() {
 #if defined(F_CPU) && (F_CPU == 160000000L)
@@ -112,19 +109,17 @@ extern "C" void optimistic_yield(uint32_t interval_us) {
     }
 }
 
-extern void pre_user_loop();
-extern void pre_user_setup();
+extern void wio_loop();
+extern void wio_setup();
 
 void loop_wrapper() {
     static bool setup_done = false;
     if(!setup_done) {
-        pre_user_setup();
-        setup();
+        wio_setup();
         setup_done = true;
     }
     preloop_update_frequency();
-    pre_user_loop();
-    loop();
+    wio_loop();
     esp_schedule();
 }
 

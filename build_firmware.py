@@ -178,7 +178,7 @@ def declare_write_vars (arg_list):
     for arg in arg_list:
         if not arg:
             continue
-        item = '    %s %s;\r\n' % (arg[0], arg[1]) 
+        item = '    %s %s;\r\n' % (arg[0], arg[1])
         result += item
     return result
 
@@ -402,7 +402,7 @@ def gen_and_build (build_phase, app_num, user_id, node_sn, node_name, server_ip,
     flash_map = '6'
     flash_spi_speed = '40'
     flash_spi_mode = 'QIO'
-    
+
     ###generate rpc wrapper and registration files
 
     cur_dir = os.path.split(os.path.realpath(__file__))[0]
@@ -665,6 +665,8 @@ if __name__ == '__main__':
     node_sn = "00000000000000000000" if len(sys.argv) < 4 else sys.argv[3]
     node_name = "esp8266_node" if len(sys.argv) < 5 else sys.argv[4]
     server_ip = "" if len(sys.argv) < 6 else sys.argv[5]
+
+    server_config.ALWAYS_BUILD_FROM_SRC = True
 
     if not gen_and_build(build_phase, app_num, user_id, node_sn, node_name, server_ip, None, None):
         print get_error_msg()

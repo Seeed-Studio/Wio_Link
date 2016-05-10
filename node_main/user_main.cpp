@@ -17,6 +17,9 @@
 
 extern void arduino_init(void);
 
+extern void loop();
+extern void setup();
+
 extern "C"
 {
 void system_phy_set_rfoption(uint8 option);
@@ -35,20 +38,49 @@ void user_rf_pre_init()
     system_phy_set_rfoption(1);  //recalibrate the rf when power up
 }
 
-
 /**
  * this function will be linked by core_esp8266_main.cpp -
  * loop_wrapper
  *
  * @param
  */
-void pre_user_setup()
+void wio_setup()
 {
     EEPROM.begin(4096);
     pinMode(FUNCTION_KEY, INPUT);
     pinMode(STATUS_LED, OUTPUT);
     pinMode(SWITCH_GROVE_POWER, OUTPUT);
     digitalWrite(SWITCH_GROVE_POWER, 1);
+
+    //failsafe
+    struct rst_info *reason = system_get_rst_info();
+    uint32_t reason_code = reason->reason;
+    if (reason_code == REASON_EXCEPTION_RST || reason_code == REASON_WDT_RST || reason_code == REASON_SOFT_WDT_RST)
+    {
+        uint8_t v = digitalRead(FUNCTION_KEY);
+        bool should_failsafe = false;
+        if (v == 0)
+        {
+            delay(1);
+            v = digitalRead(FUNCTION_KEY);
+            if (v == 0)
+            {
+                should_failsafe = true;
+            }
+        }
+
+        if (should_failsafe)
+        {
+            digitalWrite(STATUS_LED, 0);
+            system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
+            delay(1000);
+            Serial1.begin(74880);
+            Serial1.println("will fall back to previous firmware.");
+            system_upgrade_reboot();
+            system_restart();
+        }
+    }
+
     network_setup();
     rpc_server_init();
 }
@@ -59,8 +91,9 @@ void pre_user_setup()
  * @author Jack (5/23/2015)
  * @param
  */
-void pre_user_loop()
+void wio_loop()
 {
+    static bool user_setup_done = false;
     static bool smartconfig_pressed = false;
     static uint32_t smartconfig_pressed_time = 0;
 
@@ -93,6 +126,17 @@ void pre_user_loop()
     if(conn_status[0] == KEEP_ALIVE || conn_status[1] == KEEP_ALIVE)
     {
         rpc_server_loop();
+    }
+
+    // user loop
+    if (should_enter_user_loop)
+    {
+        if (!user_setup_done)
+        {
+            setup();
+            user_setup_done = true;
+        }
+        loop();
     }
 }
 
