@@ -199,8 +199,8 @@ class ExtUsersHandler(BaseHandler):
         if secret != TOKEN_SECRET:
             self.resp(403, "Wrong secret")
             return
-        if not bind_id:
-            self.resp(400, "Missing bind_id information")
+        if not bind_id and not email:
+            self.resp(400, "Missing bind_id / email information")
             return
         if not token:
             self.resp(400, "Missing token information")
@@ -209,11 +209,22 @@ class ExtUsersHandler(BaseHandler):
         cur = self.application.cur
 
         try:
-            cur.execute('SELECT * FROM users WHERE ext_bind_id=?', (bind_id,))
-            rows = cur.fetchall()
-            if len(rows) > 0:
-                cur.execute('UPDATE users SET email=?,token=? WHERE ext_bind_id=?', (email,token, bind_id))
+            create_new = False
+            if email:
+                cur.execute('SELECT * FROM users WHERE email=?', (email,))
+                rows = cur.fetchall()
+                if len(rows) > 0:
+                    cur.execute('UPDATE users SET token=?,ext_bind_id=?,ext_bind_region=? WHERE email=?', (token, bind_id, bind_region, email))
+                else:
+                    create_new = True
             else:
+                cur.execute('SELECT * FROM users WHERE ext_bind_id=?', (bind_id,))
+                rows = cur.fetchall()
+                if len(rows) > 0:
+                    cur.execute('UPDATE users SET token=? WHERE ext_bind_id=?', (token, bind_id))
+                else:
+                    create_new = True
+            if create_new:
                 cur.execute("INSERT INTO users(user_id,email,token,ext_bind_id,ext_bind_region,created_at) VALUES(?,?,?,?,?,datetime('now'))",
                             (self.gen_uuid_without_dash(), email, token, bind_id, bind_region))
         except web.HTTPError:
