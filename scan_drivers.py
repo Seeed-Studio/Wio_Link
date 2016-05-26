@@ -139,6 +139,23 @@ def parse_class_header_file (file):
         patterns["ImageURL"] = image_url[0].rstrip('\r')
     else:
         return ("can not find IMAGE_URL in %s"%file,{}, {})
+
+    ##DESCRIPTION
+    description = re.findall(r'^//DESCRIPTION\s+"(.+)"', content, re.M)
+    print description
+    if description:
+        patterns["Description"] = description[0].rstrip('\r')
+    else:
+        return ("can not find DESCRIPTION in %s"%file, {},{})
+
+    ##WIKI_URL
+    wiki_url = re.findall(r'^//WIKI_URL\s+(.+)', content, re.M)
+    print wiki_url
+    if wiki_url:
+        patterns["WikiURL"] = wiki_url[0].rstrip('\r')
+    else:
+        return ("can not find WIKI_URL in %s"%file,{}, {})
+
     ##class name
     class_name = re.findall(r'^class\s+([a-zA-z0-9_]+)', content, re.M)
     print class_name
