@@ -1021,7 +1021,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
                 if ev in grove_doc['Events']:
                     events.append({'event_name':ev, 'event_data_type':grove['Events'][ev], 'event_desc':grove_doc['Events'][ev]})
                 else:
-                    events.append({'event_name':ev, 'event_desc': ''})
+                    events.append({'event_name':ev, 'event_data_type':grove['Events'][ev], 'event_desc': ''})
 
         return (data, events)
 
