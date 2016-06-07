@@ -196,6 +196,7 @@ class ExtUsersHandler(BaseHandler):
         token = self.get_argument("token","")
         secret = self.get_argument("secret","")
 
+
         if secret != TOKEN_SECRET:
             self.resp(403, "Wrong secret")
             return
@@ -772,6 +773,15 @@ class NodeSettingHandler(NodeReadWriteHandler):
                 return False
             else:
                 return True
+
+        if req_type == 'post' and uri.find('setting/drop') >= 0:
+            for conn in self.conns:
+                if conn.sn == self.node['node_sn'] and not conn.killed:
+                    conn.kill_myself()
+                    self.resp(200)
+                    return False
+            self.resp(404, "Node is offline")
+            return False
 
     def post_request(self, req_type, uri, resp):
         if req_type == 'post' and uri.find('setting/dataxserver') >= 0:
