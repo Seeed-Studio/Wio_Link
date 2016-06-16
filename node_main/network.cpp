@@ -55,6 +55,7 @@ const char *device_find_request = "Node?";
 const char *blank_device_find_request = "Blank?";
 const char *device_keysn_write_req = "KeySN: ";
 const char *ap_config_req = "APCFG: ";
+const char *ap_change_req = "AP: ";
 const char *reboot_req = "REBOOT";
 const char *scan_req = "SCAN";
 const char *version_req = "VERSION";
@@ -365,73 +366,83 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
         }
 
         //ip data
-        if (os_strstr(FW_VERSION, "1.2") != NULL)
+        ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100);
+
+        if (ptr)
         {
-            ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100);
-
-            if (ptr)
-            {
-                Serial1.printf("Recv data server addr: %s\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100);
-                format_server_address(EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100, EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR);
-                Serial1.printf("Formatted data server addr: %s.\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR);
-            } else
-            {
-                Serial1.printf("Bad format: can not find data server ip.\r\n");
-                return;
-            }
-
+            Serial1.printf("Recv data server addr: %s\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100);
+            format_server_address(EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + 100, EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR);
+            Serial1.printf("Formatted data server addr: %s.\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR);
         } else
         {
-            ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_DATA_SERVER_IP+4);
-
-            if (ptr)
-            {
-                Serial1.printf("Recv data server ip: %s\r\n", EEPROM.getDataPtr() + EEP_DATA_SERVER_IP+4);
-                if (!extract_ip(EEPROM.getDataPtr() + EEP_DATA_SERVER_IP + 4, EEPROM.getDataPtr() + EEP_DATA_SERVER_IP))
-                {
-                    Serial1.printf("Fail to extract data server ip.\r\n");
-                }
-            } else
-            {
-                Serial1.printf("Bad format: can not find data server ip.\r\n");
-                return;
-            }
+            Serial1.printf("Bad format: can not find data server ip.\r\n");
+            return;
         }
 
 
         //ip ota
-        if (os_strstr(FW_VERSION, "1.2") != NULL)
-        {
-            ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR + 100);
+        ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR + 100);
 
-            if (ptr)
-            {
-                Serial1.printf("Recv ota server addr: %s\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR+100);
-                format_server_address(EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR + 100, EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
-                Serial1.printf("Formatted ota server addr: %s.\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
-            } else
-            {
-                Serial1.printf("Bad format: can not find ota server ip.\r\n");
-                return;
-            }
+        if (ptr)
+        {
+            Serial1.printf("Recv ota server addr: %s\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR+100);
+            format_server_address(EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR + 100, EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
+            Serial1.printf("Formatted ota server addr: %s.\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
         } else
         {
-            ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OTA_SERVER_IP+4);
-
-            if (ptr)
-            {
-                Serial1.printf("Recv ota server ip: %s\r\n", EEPROM.getDataPtr() + EEP_OTA_SERVER_IP+4);
-                if (!extract_ip(EEPROM.getDataPtr() + EEP_OTA_SERVER_IP + 4, EEPROM.getDataPtr() + EEP_OTA_SERVER_IP))
-                {
-                    Serial1.printf("Fail to extract data server ip.\r\n");
-                }
-            } else
-            {
-                Serial1.printf("Bad format: can not find ota server ip.\r\n");
-                return;
-            }
+            Serial1.printf("Bad format: can not find ota server ip.\r\n");
+            return;
         }
 
+
+        config_flag = 3;
+        memset(EEPROM.getDataPtr() + EEP_OFFSET_CFG_FLAG, config_flag, 1);  //set the config flag
+        EEPROM.commit();
+
+        if (source == 0)
+        {
+            espconn_sendto(&udp_conn, "ok\r\n", 4);
+            espconn_sendto(&udp_conn, "ok\r\n", 4);
+            espconn_sendto(&udp_conn, "ok\r\n", 4);
+        }
+        if (source == 1)
+        {
+            Serial.print("ok\r\nok\r\nok\r\n");
+        }
+
+        os_timer_disarm(&timer_conn[0]);
+        os_timer_setfn(&timer_conn[0], fire_reboot, NULL);
+        os_timer_arm(&timer_conn[0], 1000, 0);
+
+    }
+    else if ((pkey = os_strstr(pusrdata, ap_change_req)) != NULL && config_flag == 2)
+    {
+        //ssid
+        pkey += os_strlen(ap_change_req);
+        uint8_t *ptr;
+
+        ptr = extract_substr(pkey, EEPROM.getDataPtr() + EEP_OFFSET_SSID);
+
+        if (ptr)
+        {
+            Serial1.printf("Recv ssid: %s \r\n", EEPROM.getDataPtr() + EEP_OFFSET_SSID);
+        } else
+        {
+            Serial1.printf("Bad format: wifi ssid password setting.\r\n");
+            return;
+        }
+
+        //password
+        ptr = extract_substr(ptr + 1, EEPROM.getDataPtr() + EEP_OFFSET_PASSWORD);
+
+        if (ptr)
+        {
+            Serial1.printf("Recv password: %s  \r\n", EEPROM.getDataPtr() + EEP_OFFSET_PASSWORD);
+        } else
+        {
+            Serial1.printf("Bad format: wifi ssid password setting.\r\n");
+            return;
+        }
 
 
         config_flag = 3;
@@ -1089,7 +1100,7 @@ static void check_getting_ip_address(void *arg)
 
     bool valid_server_addr1 = validate_server_address(EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR);
     bool valid_server_addr2 = validate_server_address(EEPROM.getDataPtr() + EEP_OTA_SERVER_ADDR);
-    if (os_strstr(FW_VERSION, "1.2") != NULL && valid_server_addr1 && valid_server_addr2)
+    if (valid_server_addr1 && valid_server_addr2)  //has been configured with new app at least once time.
     {
         conn_status[0] = WAIT_RESOLVE;
         conn_status[1] = WAIT_RESOLVE;

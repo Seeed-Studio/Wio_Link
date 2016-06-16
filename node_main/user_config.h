@@ -15,7 +15,7 @@
 
 
 #ifndef NODE_NAME
-#define NODE_NAME                   "Pion One 001"
+#define NODE_NAME                   "Wio001"
 #endif
 
 #define DATA_SERVER_PORT            8000

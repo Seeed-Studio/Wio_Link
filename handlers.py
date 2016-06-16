@@ -196,6 +196,7 @@ class ExtUsersHandler(BaseHandler):
         token = self.get_argument("token","")
         secret = self.get_argument("secret","")
 
+
         if secret != TOKEN_SECRET:
             self.resp(403, "Wrong secret")
             return
@@ -773,6 +774,15 @@ class NodeSettingHandler(NodeReadWriteHandler):
             else:
                 return True
 
+        if req_type == 'post' and uri.find('setting/drop') >= 0:
+            for conn in self.conns:
+                if conn.sn == self.node['node_sn'] and not conn.killed:
+                    conn.kill_myself()
+                    self.resp(200)
+                    return False
+            self.resp(404, "Node is offline")
+            return False
+
     def post_request(self, req_type, uri, resp):
         if req_type == 'post' and uri.find('setting/dataxserver') >= 0:
             #ips = re.findall(r'.*/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', uri)
@@ -1021,7 +1031,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
                 if ev in grove_doc['Events']:
                     events.append({'event_name':ev, 'event_data_type':grove['Events'][ev], 'event_desc':grove_doc['Events'][ev]})
                 else:
-                    events.append({'event_name':ev, 'event_desc': ''})
+                    events.append({'event_name':ev, 'event_data_type':grove['Events'][ev], 'event_desc': ''})
 
         return (data, events)
 
