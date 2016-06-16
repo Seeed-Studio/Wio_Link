@@ -24,3 +24,8 @@ smtp_pwd  = 'yours'
 # Enable tornado's auto reload
 auto_reload_for_debug = False
 
+
+###############################
+# The secrect for external user login
+ext_user_secret = 'secret'
+

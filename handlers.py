@@ -196,8 +196,7 @@ class ExtUsersHandler(BaseHandler):
         token = self.get_argument("token","")
         secret = self.get_argument("secret","")
 
-
-        if secret != TOKEN_SECRET:
+        if secret != server_config.ext_user_secret:
             self.resp(403, "Wrong secret")
             return
         if not bind_id and not email:
