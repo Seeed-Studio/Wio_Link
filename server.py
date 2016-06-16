@@ -147,7 +147,7 @@ class DeviceConnection(object):
                 self.stream.write("sorry\r\n")
                 yield gen.sleep(0.1)
                 self.kill_myself()
-                gen_log.info("node sn not found")
+                gen_log.error("node sn not found")
                 raise gen.Return(101) #node not found
 
             key = node['private_key']
@@ -221,11 +221,11 @@ class DeviceConnection(object):
                     piece = piece.strip("\r\n")
 
                     if piece in ['##ALIVE##']:
-                        gen_log.info('Node %s alive on %s channel!' % (self.node_id, self.device_server.role))
+                        gen_log.debug('Node %s alive on %s channel!' % (self.node_id, self.device_server.role))
                         continue
 
                     json_obj = json.loads(piece)
-                    gen_log.info('Node %s recv json on %s channel' % (self.node_id, self.device_server.role))
+                    gen_log.debug('Node %s recv json on %s channel' % (self.node_id, self.device_server.role))
                     gen_log.debug('%s' % str(json_obj))
 
                     try:
@@ -303,7 +303,7 @@ class DeviceConnection(object):
 
     @gen.coroutine
     def _online_check (self):
-        gen_log.info("heartbeat sent to node %s on %s channel" % (self.node_id, self.device_server.role))
+        gen_log.debug("heartbeat sent to node %s on %s channel" % (self.node_id, self.device_server.role))
         try:
             yield self.secure_write("##PING##")
             if self.timeout_handler_onlinecheck:
@@ -327,10 +327,10 @@ class DeviceConnection(object):
             #gen_log.info("waited hello")
             pass
         elif ret == 1:
-            gen_log.info("timeout waiting hello, kill this connection")
+            gen_log.debug("timeout waiting hello, kill this connection")
             return
         elif ret == 2:
-            gen_log.info("connection is closed by client")
+            gen_log.debug("connection is closed by client")
             return
         elif ret >= 100:
             return

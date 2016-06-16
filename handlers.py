@@ -611,7 +611,7 @@ class NodeBaseHandler(BaseHandler):
         if not node:
             self.resp(403,"Please attach the valid node token (not the user token)")
         else:
-            gen_log.info("get current node, id: %s, name: %s" % (node['node_id'],node["name"]))
+            gen_log.debug("get current node, id: %s, name: %s" % (node['node_id'],node["name"]))
 
         return node
 
