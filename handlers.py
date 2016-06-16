@@ -196,8 +196,7 @@ class ExtUsersHandler(BaseHandler):
         token = self.get_argument("token","")
         secret = self.get_argument("secret","")
 
-
-        if secret != TOKEN_SECRET:
+        if secret != server_config.ext_user_secret:
             self.resp(403, "Wrong secret")
             return
         if not bind_id and not email:
@@ -611,7 +610,7 @@ class NodeBaseHandler(BaseHandler):
         if not node:
             self.resp(403,"Please attach the valid node token (not the user token)")
         else:
-            gen_log.info("get current node, id: %s, name: %s" % (node['node_id'],node["name"]))
+            gen_log.debug("get current node, id: %s, name: %s" % (node['node_id'],node["name"]))
 
         return node
 
