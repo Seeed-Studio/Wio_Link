@@ -20,6 +20,7 @@ import os
 import sys
 import re
 import json
+import time as systime
 from datetime import *
 
 TYPE_MAP = {
@@ -155,6 +156,37 @@ def parse_class_header_file (file):
         patterns["WikiURL"] = wiki_url[0].rstrip('\r')
     else:
         return ("can not find WIKI_URL in %s"%file,{}, {})
+
+    ##ADDED_AT
+    added_at = re.findall(r'^//ADDED_AT\s+"(.+)"', content, re.M)
+    print added_at
+    if added_at:
+        date_str = added_at[0].rstrip('\r')
+        _time = None
+        fmt = ['%Y-%m-%d', '%Y-%m-%d %H:%M', '%Y-%m-%d %H:%M:%S']
+        for f in fmt:
+            try:
+                _time = systime.strptime(date_str, f)
+                break
+            except Exception,e:
+                print e
+                _time = None
+        if not _time:
+            return ("%s is not the valid date format, should be YYYY-mm-dd"%date_str, {},{})
+        else:
+            timestamp = int(systime.mktime(_time))
+        patterns["AddedAt"] = timestamp
+        print timestamp
+    else:
+        return ("can not find ADDED_AT in %s"%file, {},{})
+
+    ##AUTHOR
+    author = re.findall(r'^//AUTHOR\s+"(.+)"', content, re.M)
+    print author
+    if author:
+        patterns["Author"] = author[0].rstrip('\r')
+    else:
+        return ("can not find AUTHOR in %s"%file, {},{})
 
     ##class name
     class_name = re.findall(r'^class\s+([a-zA-z0-9_]+)', content, re.M)
