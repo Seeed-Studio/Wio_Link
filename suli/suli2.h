@@ -72,7 +72,7 @@ typedef gpio_t IO_T;
 #define SULI_HIGH     0x01
 #define SULI_LOW      0x00
 #define SULI_RISE     IRQ_RISE
-#define SULI_FALL     IRQ_FALL  
+#define SULI_FALL     IRQ_FALL
 #define SULI_CHANGE   IRQ_RISE   //mbed doesn't support change interrupt.
 /**
  * void suli_pin_init(IO_T *, PIN_T, PIN_DIR )
@@ -112,7 +112,7 @@ typedef int IO_T;
 #define SULI_HIGH     0x01
 #define SULI_LOW      0x00
 #define SULI_RISE     RISING
-#define SULI_FALL     FALLING  
+#define SULI_FALL     FALLING
 #define SULI_CHANGE   CHANGE
 
 /**
@@ -136,8 +136,8 @@ typedef int IO_T;
 #define suli_pin_read(pio)  digitalRead(*(pio))
 
 /**
- * uint32_t suli_pin_pulse_in(IO_T *, what_state, timeout) 
- * @param timeout - us 
+ * uint32_t suli_pin_pulse_in(IO_T *, what_state, timeout)
+ * @param timeout - us
  */
 #define suli_pin_pulse_in(pio,state,timeout)  pulseIn(*(pio), state, timeout)
 
@@ -198,7 +198,12 @@ typedef int ANALOG_T;
 /**
  * uint16_t suli_analog_read(ANALOG_T *)
  */
+#ifdef ESP8266
+//fix resistor division error
+#define suli_analog_read(aio)    ((int)(analogRead(*aio)*0.9090909091))
+#else
 #define suli_analog_read(aio)    analogRead(*aio)
+#endif
 
 
 #endif
@@ -268,8 +273,8 @@ inline void suli_pwm_frequency(PWM_T *pwm, uint32_t hz)
 }
 
 /**
- * void suli_pwm_output(PWM_T *, float percent) 
- * percent: 0.0 ~ 100.0f 
+ * void suli_pwm_output(PWM_T *, float percent)
+ * percent: 0.0 ~ 100.0f
  */
 inline void suli_pwm_output(PWM_T *pwm, float percent)
 {
@@ -625,10 +630,10 @@ void suli_event_trigger(EVENT_T *event, void *event_data);
 
 
 /***************************************************************************
- * Timer related APIs 
- * This timer is not the one PWM used 
- * The timer APIs implement a timer event loop based on hardware timers, 
- * it's realtime so that it MUST NOT use the CPU too long. 
+ * Timer related APIs
+ * This timer is not the one PWM used
+ * The timer APIs implement a timer event loop based on hardware timers,
+ * it's realtime so that it MUST NOT use the CPU too long.
  ***************************************************************************/
 typedef void (*timer_callback_t)(void *data);
 
@@ -667,7 +672,7 @@ inline uint32_t __suli_timer_get_ticks()
     uint32_t ccount;
     __asm__ __volatile__("rsr %0,ccount":"=a" (ccount));
     return ccount;
-    
+
 }
 
 #define __suli_timer_microseconds_to_ticks     microsecondsToClockCycles
@@ -694,7 +699,7 @@ void __suli_timer_set_timeout_ticks(uint32_t ticks);
 
 /**
  * Install a timer with interval microseconds
- * 
+ *
  * @param timer - the pointer to pre-allocate TIMER_T struct
  * @param microseconds - interval length (for esp8266's 32bit timer0, the longest interval is ~52000000 us.)
  * @param cb - callback function for this timer entry
@@ -703,18 +708,18 @@ void __suli_timer_set_timeout_ticks(uint32_t ticks);
 void suli_timer_install(TIMER_T *timer, uint32_t microseconds, timer_callback_t cb, void *data, bool repeat = false);
 
 /**
- * Remove the timer. 
- * Note the function will not release the memory 
- * 
- * @param timer 
+ * Remove the timer.
+ * Note the function will not release the memory
+ *
+ * @param timer
  */
 void suli_timer_remove(TIMER_T *timer);
 
 /**
  * Change the interval of this timer.
- * 
- * @param timer 
- * @param microseconds 
+ *
+ * @param timer
+ * @param microseconds
  */
 void suli_timer_control_interval(TIMER_T *timer, uint32_t microseconds);
 
