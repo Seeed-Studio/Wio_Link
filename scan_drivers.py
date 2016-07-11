@@ -424,7 +424,7 @@ if __name__ == '__main__':
     skip_build_libs = '' if len(sys.argv) < 2 else sys.argv[1]
 
     if skip_build_libs in ['-k', 'skip']:
-        sys.exit(1)
+        sys.exit(0)
 
     user_build_dir = cur_dir + '/users_build/local_user_00000000000000000000'
 
@@ -445,7 +445,3 @@ if __name__ == '__main__':
         if line.find("error:") > -1 or line.find("make:") > -1 or line.find("undefined reference to") > -1:
             print line
             sys.exit(1)
-
-
-
-
