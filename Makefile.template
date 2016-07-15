@@ -323,10 +323,10 @@ all: $(OUTPUT).bin #$(OUTPUT).hex
 
 clean:
 	rm -f *.elf *.hex *.d *.o *.a *.dump *.S
-    
+
 clean_libs:
 	rm -f ../*.a *.o
-    
+
 libs: ../libprebuilt.a
 
 %.o: %.s
@@ -395,6 +395,7 @@ endif
 	@echo "Generate $(BIN_NAME).bin successully."
 	@echo "boot.bin------------>0x00000"
 	@echo "$(BIN_NAME).bin--->$(addr)"
+	@rm *.elf
 
 $(OUTPUT).hex: $(OUTPUT).elf
 	@$(OBJCOPY) -O ihex $< $@
