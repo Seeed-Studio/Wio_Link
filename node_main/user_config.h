@@ -25,8 +25,6 @@
 #define OTA_SERVER_URL_PREFIX       "/v1"
 #endif
 
-#define ENABLE_DEBUG_ON_UART1       0
-
 /* eeprom slots */
 #define EEP_OFFSET_KEY              0
 #define EEP_OFFSET_SN               100
@@ -38,6 +36,7 @@
 #define EEP_OTA_RESULT_FLAG         464
 #define EEP_DATA_SERVER_ADDR        500
 #define EEP_OTA_SERVER_ADDR         700
+#define EEP_DEBUG_FLAG              900
 
 
 #endif
