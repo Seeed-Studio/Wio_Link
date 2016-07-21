@@ -474,10 +474,11 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
         uint8_t *ptr;
 
         //1 or 0
-        ptr = extract_substr(pkey, EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4);
-
-        if (ptr)
+        //ptr = extract_substr(pkey, EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4);
+        if (*pkey == '1' || *pkey == '0')
         {
+            memcpy(EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4, pkey, 1);
+            memset(EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 5, 0, 1);
             Serial1.printf("Recv debug flag: %s \r\n", EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4);
             uint32_t magic = 0x12345678;
             memcpy(EEPROM.getDataPtr() + EEP_DEBUG_FLAG, (uint8_t *)(&magic), 4);
