@@ -29,11 +29,16 @@
 #
 #Set the OTA server which is used by the Wio Links
 #This script will connect to OTA server to fetch node informations.
-#Options: china, international, custom
-OTA_SERVER='china'
+#Options: chinese, global_old, global_new, customize
+OTA_SERVER='global_new'
 
-#Set the address of the OTA server if OTA_SERVER is set to 'custom'
-#Only applies when OTA_SERVER='custom'
+#Set the tokens when seeed server(chinese, global new and old),
+#Get token from https://wio.seeed.io/login
+#Note: all seeed server have same user token
+TOKENS = ["your token"]
+
+#Set the address of the OTA server if OTA_SERVER is set to 'customize'
+#Only applies when OTA_SERVER='customize'
 CUSTOM_OTA_SERVER_ADDR='http://192.168.x.x:8080'
 
 #Set the accounts which will be used when logging in the OTA server
@@ -810,41 +815,17 @@ def fetch_node_info():
 
     global NODES_DATABASE
 
-    ota_server_addr = CUSTOM_OTA_SERVER_ADDR
-    if OTA_SERVER == 'china':
-        ota_server_addr = 'https://cn.iot.seeed.cc'
-    elif OTA_SERVER == 'international':
-        ota_server_addr = 'https://iot.seeed.cc'
-
-    if len(ACCOUNTS) == 0:
-        gen_log.error("Please configure the user account!!!")
+    ota_server_addr = get_ota_server_addr()
+    tokens = get_all_token()
+    if not tokens:
+        gen_log.error("Get token failed!!!")
         return False
 
     gen_log.info("Fetching the list of nodes...")
-
-    for a in ACCOUNTS:
-        acc = {'email':a, 'password': ACCOUNTS[a]}
-        login_result_obj = {'token':'', }
+    
+    for token in tokens:
         try:
-            r = requests.post(ota_server_addr.rstrip('/')+'/v1/user/login', data=acc, verify=False)
-            if r.status_code != requests.codes.ok:
-                r.raise_for_status()
-            else:
-                login_result_obj = r.json()
-
-        except requests.exceptions.HTTPError,e:
-            gen_log.error(e)
-            return False
-
-        #print login_result_obj
-        if 'status' in login_result_obj and login_result_obj['status'] != 200:
-            gen_log.error('error happened when logging in %s' % a)
-            gen_log.info(login_result_obj['msg'])
-            return False
-
-
-        try:
-            r = requests.get(ota_server_addr.rstrip('/')+'/v1/nodes/list?access_token='+login_result_obj['token'], verify=False)
+            r = requests.get(ota_server_addr.rstrip('/')+'/v1/nodes/list?access_token='+token, verify=False)
             if r.status_code != requests.codes.ok:
                 r.raise_for_status()
             else:
@@ -871,6 +852,59 @@ def fetch_node_info():
 
     return True
 
+def get_ota_server_addr():
+    ota_server_addr = CUSTOM_OTA_SERVER_ADDR
+    if OTA_SERVER == 'chinese':
+        ota_server_addr = 'https://cn.wio.seeed.io'
+    elif OTA_SERVER == 'global_old':
+        ota_server_addr = 'https://iot.seeed.cc'
+    elif OTA_SERVER == 'global_new':
+        ota_server_addr = 'https://us.wio.seeed.io'
+
+    return ota_server_addr
+    
+def get_all_token():
+    ota_server_addr = get_ota_server_addr()
+    
+    token_list = []
+    if ota_server_addr != "customize":
+        token_list = TOKENS
+    else:
+        gen_log.info("Fetching all token...")
+        
+        if len(ACCOUNTS) == 0:
+            gen_log.error("Please configure the user account!!!")
+            return False
+
+        for a in ACCOUNTS:
+            acc = {'email':a, 'password': ACCOUNTS[a]}
+            login_result_obj = {'token':'', }
+            try:
+                r = requests.post(ota_server_addr.rstrip('/')+'/v1/user/login', data=acc, verify=False)
+                if r.status_code != requests.codes.ok:
+                    r.raise_for_status()
+                else:
+                    login_result_obj = r.json()
+
+            except requests.exceptions.HTTPError,e:
+                gen_log.error(e)
+                return False
+
+            #print login_result_obj
+            if 'status' in login_result_obj and login_result_obj['status'] != 200:
+                gen_log.error('error happened when logging in %s' % a)
+                gen_log.info(login_result_obj['msg'])
+                return False
+            
+            token_list.append(login_result_obj['token'])
+    
+        
+    if len(token_list) == 0:
+        gen_log.error("Not found any user token!!!")
+        return False
+        
+    return token_list
+        
 def main():
 
     global NODES_DATABASE
@@ -915,5 +949,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
