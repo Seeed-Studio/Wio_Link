@@ -105,10 +105,22 @@
 
 <p>If the debug mode is enabled, the error message will also include a field &ldquo;traceback&rdquo; whose value is the traceback of the error.</p>
 
+<h2 id="server-urls">Server URLs</h2>
+
+<p>Now SEEED have three servers running, the URLs of them are:</p>
+
+<ul>
+<li>https://iot.seeed.cc</li>
+<li>https://us.wio.seeed.io</li>
+<li>https://cn.wio.seeed.io</li>
+</ul>
+
+<p>The first server iot.seeed.cc is the original global server which is now the transition server for non-Chinese users, and it will be closed after September 1st. From now on, it&rsquo;s recommended that you register your Wio devices on us.wio.seeed.io / cn.wio.seeed.io. All the API URLs following in this reference are illustrated with us.wio.seeed.io, for Chinese users please replace them with cn.wio.seeed.io.</p>
+
 <h1 id="user-management-apis">User management APIs</h1>
 
 <h2 id="create-a-user-account">Create a user account</h2>
-<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>email here] -d <span class="nv">password</span><span class="o">=[</span>password here] https://iot.seeed.cc/v1/user/create
+<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>email here] -d <span class="nv">password</span><span class="o">=[</span>password here] https://us.wio.seeed.io/v1/user/create
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"JLvvpkpmyMWQCOqUqPd5e4wR2f7wxM7fDmenWuxrcLs"</span><span class="w">
@@ -141,7 +153,7 @@ Note: All the illustrated responses are the succeeded one, the error response is
 </aside>
 
 <h2 id="change-the-password">Change the password</h2>
-<pre class="highlight shell"><code>curl -d <span class="nv">password</span><span class="o">=[</span>new password here] https://iot.seeed.cc/v1/user/changepassword?access_token<span class="o">=</span>9L0_ofzPHnan91UQbtcCS4KzCI8BGQk6-OgMOtmnI3Q
+<pre class="highlight shell"><code>curl -d <span class="nv">password</span><span class="o">=[</span>new password here] https://us.wio.seeed.io/v1/user/changepassword?access_token<span class="o">=</span>9L0_ofzPHnan91UQbtcCS4KzCI8BGQk6-OgMOtmnI3Q
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span><span class="w">
@@ -169,7 +181,7 @@ Require: User token
 </tbody></table>
 
 <h2 id="retreive-the-password">Retreive the password</h2>
-<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>new email here] https://iot.seeed.cc/v1/user/retrievepassword
+<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>new email here] https://us.wio.seeed.io/v1/user/retrievepassword
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span><span class="w">
@@ -195,7 +207,7 @@ Require: User token
 </tbody></table>
 
 <h2 id="user-login">User login</h2>
-<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>email here] -d <span class="nv">password</span><span class="o">=[</span>password here] https://iot.seeed.cc/v1/user/login
+<pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>email here] -d <span class="nv">password</span><span class="o">=[</span>password here] https://us.wio.seeed.io/v1/user/login
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"JLvvpkpmyMWQCOqUqPd5e4wR2f7wxM7fDmenWuxrcLs"</span><span class="p">,</span><span class="w">
@@ -231,7 +243,7 @@ All require: User token
 </aside>
 
 <h2 id="create-a-node">Create a node</h2>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> -d <span class="nv">name</span><span class="o">=</span>node_1 -d <span class="nv">board</span><span class="o">=</span><span class="s2">"Wio Link v1.0"</span> https://iot.seeed.cc/v1/nodes/create
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> -d <span class="nv">name</span><span class="o">=</span>node_1 -d <span class="nv">board</span><span class="o">=</span><span class="s2">"Wio Link v1.0"</span> https://us.wio.seeed.io/v1/nodes/create
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"node_key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"e3d3b0fe920ddc3c69393fdbf83a2114"</span><span class="p">,</span><span class="w"> 
@@ -280,7 +292,7 @@ All require: User token
 </tbody></table>
 
 <h2 id="list-all-nodes-of-a-user">List all nodes of a user</h2>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://iot.seeed.cc/v1/nodes/list
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://us.wio.seeed.io/v1/nodes/list
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"nodes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
@@ -348,7 +360,7 @@ All require: User token
 </tbody></table>
 
 <h2 id="rename-a-node">Rename a node</h2>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://iot.seeed.cc/v1/nodes/rename -d <span class="nv">node_sn</span><span class="o">=</span>160769ffa50feae76ec6f7a4fb95bf6c -d <span class="nv">name</span><span class="o">=</span>new_name
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://us.wio.seeed.io/v1/nodes/rename -d <span class="nv">node_sn</span><span class="o">=</span>160769ffa50feae76ec6f7a4fb95bf6c -d <span class="nv">name</span><span class="o">=</span>new_name
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span><span class="w">
@@ -377,7 +389,7 @@ All require: User token
 </tbody></table>
 
 <h2 id="delete-a-node">Delete a node</h2>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token StiLU1g5SNfQYWQLKpB7uMuE4l2uQuamKMBsIW1RGgA"</span> https://iot.seeed.cc/v1/nodes/delete -d <span class="s2">"node_sn=bac0df2d1b01b32c8ad3a0efbfc31c5f"</span>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token StiLU1g5SNfQYWQLKpB7uMuE4l2uQuamKMBsIW1RGgA"</span> https://us.wio.seeed.io/v1/nodes/delete -d <span class="s2">"node_sn=bac0df2d1b01b32c8ad3a0efbfc31c5f"</span>
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ok"</span><span class="w">
@@ -407,7 +419,7 @@ All require: User token
 </aside>
 
 <h2 id="get-all-grove-drivers-39-information">Get all grove drivers&rsquo; information</h2>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span>  https://iot.seeed.cc/v1/scan/drivers
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span>  https://us.wio.seeed.io/v1/scan/drivers
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
   </span><span class="nt">"drivers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
@@ -462,7 +474,7 @@ All require: User token
 <p><code class="prettyprint">GET /v1/scan/drivers</code></p>
 
 <h2 id="get-the-status-of-last-driver-scanning">Get the status of last driver scanning</h2>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span>  https://iot.seeed.cc/v1/scan/status
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span>  https://us.wio.seeed.io/v1/scan/status
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
   </span><span class="nt">"msg"</span><span class="p">:</span><span class="w"> </span><span class="s2">"scanned 40 grove drivers at 2015-12-25 15:22:10.796713"</span><span class="p">,</span><span class="w">
@@ -486,7 +498,7 @@ All require: User token
 </aside>
 
 <h2 id="list-all-supported-boards">List all supported boards</h2>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://iot.seeed.cc/v1/boards/list
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token aKleqQebIsjmQMSCokemtgNXMD4Y7OTe3uyzEL1iwwA"</span> https://us.wio.seeed.io/v1/boards/list
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"boards"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
@@ -549,7 +561,7 @@ All require: Node token
 <blockquote>
 <p>Access through Data Exchange Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/.well-known
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://us.wio.seeed.io/v1/node/.well-known
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"node name"</span><span class="p">,</span><span class="w">
@@ -576,9 +588,9 @@ All require: Node token
 <blockquote>
 <p>Access through Data Exchange Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/Grove_Example1/temp
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://us.wio.seeed.io/v1/node/Grove_Example1/temp
 </code></pre>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/Grove_Example1/with_argument/90
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://us.wio.seeed.io/v1/node/Grove_Example1/with_argument/90
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"temp"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="w">
@@ -631,9 +643,9 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through Data Exchange Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/Grove_Example1/float_value/10.5
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://us.wio.seeed.io/v1/node/Grove_Example1/float_value/10.5
 </code></pre>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/Grove_Example1/multi_value/10/10.5/445566
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://us.wio.seeed.io/v1/node/Grove_Example1/multi_value/10/10.5/445566
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="w">
@@ -679,7 +691,7 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through Data Exchange Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -X POST https://iot.seeed.cc/v1/node/pm/sleep/5?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+<pre class="highlight shell"><code>curl -X POST https://us.wio.seeed.io/v1/node/pm/sleep/5?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="w">
@@ -713,7 +725,7 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through OTA Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/resources
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://us.wio.seeed.io/v1/node/resources
 </code></pre>
 
 <p>An API reference web page will be rendered. With this reference page, you can lookup the URL of the APIs exposed and the events that node can produce.</p>
@@ -725,7 +737,7 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through OTA Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> -H <span class="s2">"Content-Type: application/json"</span>  https://iot.seeed.cc/v1/ota/trigger -d <span class="s1">'{"board_name": "Wio Link v1.0", "connections":[{"port":"UART0", "sku":"111020001"},{"port":"I2C0", "sku":"101020050"}]}'</span>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> -H <span class="s2">"Content-Type: application/json"</span>  https://us.wio.seeed.io/v1/ota/trigger -d <span class="s1">'{"board_name": "Wio Link v1.0", "connections":[{"port":"UART0", "sku":"111020001"},{"port":"I2C0", "sku":"101020050"}]}'</span>
 </code></pre>
 
 <blockquote>
@@ -787,13 +799,13 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Only phase 1</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Content-Type: application/json"</span>  https://iot.seeed.cc/v1/ota/trigger?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2&amp;build_phase<span class="o">=</span>1 -d <span class="s1">'{"board_name": "Wio Link v1.0", "connections":[{"port":"UART0", "sku":"111020001"},{"port":"I2C0", "sku":"101020050"}]}'</span>
+<pre class="highlight shell"><code>curl -H <span class="s2">"Content-Type: application/json"</span>  https://us.wio.seeed.io/v1/ota/trigger?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2&amp;build_phase<span class="o">=</span>1 -d <span class="s1">'{"board_name": "Wio Link v1.0", "connections":[{"port":"UART0", "sku":"111020001"},{"port":"I2C0", "sku":"101020050"}]}'</span>
 </code></pre>
 
 <blockquote>
 <p>Only phase 2 (Must pass phase 1 before)</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -X POST https://iot.seeed.cc/v1/ota/trigger?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2&amp;build_phase<span class="o">=</span>2 
+<pre class="highlight shell"><code>curl -X POST https://us.wio.seeed.io/v1/ota/trigger?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2&amp;build_phase<span class="o">=</span>2 
 </code></pre>
 
 <h2 id="track-the-ota-status">Track the OTA status</h2>
@@ -801,7 +813,7 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through OTA Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/ota/status
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://us.wio.seeed.io/v1/ota/status
 </code></pre>
 
 <blockquote>
@@ -838,7 +850,7 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through OTA Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://iot.seeed.cc/v1/node/config
+<pre class="highlight shell"><code>curl -H <span class="s2">"Authorization: token d6d68b4b6b43f213569f5832dd8277b2"</span> https://us.wio.seeed.io/v1/node/config
 </code></pre>
 
 <p>Response if the OTA is triggered successfully:</p>
@@ -869,7 +881,7 @@ The parameters are location sensitive. They must follow the order of what the we
 <blockquote>
 <p>Access through OTA Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -X POST -d <span class="nv">dataxurl</span><span class="o">=</span>https://example.com https://iot.seeed.cc/v1/node/setting/dataxserver/192.168.31.2?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+<pre class="highlight shell"><code>curl -X POST -d <span class="nv">dataxurl</span><span class="o">=</span>https://example.com https://us.wio.seeed.io/v1/node/setting/dataxserver/192.168.31.2?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
     </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OK"</span><span class="w">
@@ -940,7 +952,7 @@ All require: Node token
 
 <p>Upload ULB:</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -H <span class="s2">"Content-Type: application/json"</span>  https://iot.seeed.cc/v1/cotf/project?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2 -d <span class="s1">'{
+<pre class="highlight shell"><code>curl -H <span class="s2">"Content-Type: application/json"</span>  https://us.wio.seeed.io/v1/cotf/project?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2 -d <span class="s1">'{
   "./Main.h": "source code here",
   "./Main.cpp": "source code here",
   "./other_file.cpp": "source code here",
@@ -955,7 +967,7 @@ All require: Node token
 <blockquote>
 <p>Download ULB:</p>
 </blockquote>
-<pre class="highlight shell"><code>curl https://iot.seeed.cc/v1/cotf/project?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+<pre class="highlight shell"><code>curl https://us.wio.seeed.io/v1/cotf/project?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
 </code></pre>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
   </span><span class="nt">"./Main.h"</span><span class="p">:</span><span class="w"> </span><span class="s2">"source code here"</span><span class="p">,</span><span class="w">
@@ -1013,7 +1025,7 @@ All require: Node token
 
 <p>Access through Data Exchange Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl https://iot.seeed.cc/v1/node/variable/var1?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+<pre class="highlight shell"><code>curl https://us.wio.seeed.io/v1/node/variable/var1?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
 </code></pre>
 
 <p>Data type supported:</p>
@@ -1031,7 +1043,7 @@ All require: Node token
 
 <p>Access through Data Exchange Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -X POST https://iot.seeed.cc/v1/node/variable/var1/200?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
+<pre class="highlight shell"><code>curl -X POST https://us.wio.seeed.io/v1/node/variable/var1/200?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2
 </code></pre>
 
 <p><code class="prettyprint">POST /v1/node/variable/{variable name}/{variable value}</code></p>
@@ -1055,7 +1067,7 @@ All require: Node token
 
 <p>Access through Data Exchange Server</p>
 </blockquote>
-<pre class="highlight shell"><code>curl -X POST https://iot.seeed.cc/v1/node/function/func1?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2 -d <span class="nv">arg</span><span class="o">=</span><span class="s2">"argument here"</span>
+<pre class="highlight shell"><code>curl -X POST https://us.wio.seeed.io/v1/node/function/func1?access_token<span class="o">=</span>d6d68b4b6b43f213569f5832dd8277b2 -d <span class="nv">arg</span><span class="o">=</span><span class="s2">"argument here"</span>
 </code></pre>
 
 <p>Only support one String type parameter.</p>
