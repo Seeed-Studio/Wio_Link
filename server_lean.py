@@ -867,7 +867,7 @@ def get_all_token():
     ota_server_addr = get_ota_server_addr()
     
     token_list = []
-    if ota_server_addr != "customize":
+    if OTA_SERVER != "customize":
         token_list = TOKENS
     else:
         gen_log.info("Fetching all token...")
