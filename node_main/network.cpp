@@ -34,6 +34,7 @@
 static uint8_t get_ip_retry_cnt = 0;
 uint8_t conn_status[2] = { WAIT_GET_IP, WAIT_GET_IP };
 bool should_enter_user_loop = false;
+bool debug_enabled = false;
 static int conn_retry_cnt[2] = {0};
 static uint16_t conn_retry_delay[2] = {1000, 1000};
 static uint8_t get_hello[2] = {0};
@@ -59,6 +60,8 @@ const char *ap_change_req = "AP: ";
 const char *reboot_req = "REBOOT";
 const char *scan_req = "SCAN";
 const char *version_req = "VERSION";
+const char *query_debug_req = "DEBUG";
+const char *enable_debug_req = "ENDEBUG: ";
 
 typedef struct __ap_info_s
 {
@@ -464,6 +467,63 @@ static void parse_config_message(int source, char *pusrdata, unsigned short leng
         os_timer_setfn(&timer_conn[0], fire_reboot, NULL);
         os_timer_arm(&timer_conn[0], 1000, 0);
 
+    }
+    else if ((pkey = os_strstr(pusrdata, enable_debug_req)) != NULL && config_flag == 2)
+    {
+        pkey += os_strlen(enable_debug_req);
+        uint8_t *ptr;
+
+        //1 or 0
+        //ptr = extract_substr(pkey, EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4);
+        if (*pkey == '1' || *pkey == '0')
+        {
+            memcpy(EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4, pkey, 1);
+            memset(EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 5, 0, 1);
+            Serial1.printf("Recv debug flag: %s \r\n", EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4);
+            uint32_t magic = 0x12345678;
+            memcpy(EEPROM.getDataPtr() + EEP_DEBUG_FLAG, (uint8_t *)(&magic), 4);
+        } else
+        {
+            Serial1.printf("Bad format: debug flag.\r\n");
+            return;
+        }
+
+        config_flag = 3;
+        memset(EEPROM.getDataPtr() + EEP_OFFSET_CFG_FLAG, config_flag, 1);  //set the config flag
+        EEPROM.commit();
+
+        if (source == 0)
+        {
+            espconn_sendto(&udp_conn, "ok\r\n", 4);
+            espconn_sendto(&udp_conn, "ok\r\n", 4);
+            espconn_sendto(&udp_conn, "ok\r\n", 4);
+        }
+        if (source == 1)
+        {
+            Serial.print("ok\r\nok\r\nok\r\n");
+        }
+
+        os_timer_disarm(&timer_conn[0]);
+        os_timer_setfn(&timer_conn[0], fire_reboot, NULL);
+        os_timer_arm(&timer_conn[0], 1000, 0);
+    }
+    else if ((pkey = os_strstr(pusrdata, query_debug_req)) != NULL)
+    {
+        uint32_t magic;
+        char *flag = "0";
+
+        memcpy((uint8_t *)(&magic), EEPROM.getDataPtr() + EEP_DEBUG_FLAG, 4);
+
+        if (magic == 0x12345678) flag = EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4;
+
+        if (source == 0)
+        {
+            espconn_sendto(&udp_conn, flag, 1);
+            espconn_sendto(&udp_conn, "\r\n", 2);
+        } else
+        {
+            Serial.printf("%s\r\n", flag);
+        }
     }
 }
 
@@ -1292,14 +1352,26 @@ void network_config_mode()
  */
 void network_setup()
 {
-#if ENABLE_DEBUG_ON_UART1
-    Serial1.begin(74880);
-    //Serial1.setDebugOutput(true);
-    Serial1.println("\n\n");
-#else
-    pinMode(STATUS_LED, OUTPUT);
-    digitalWrite(STATUS_LED, 1);
-#endif
+    uint32_t magic;
+    char *flag = "0";
+
+    memcpy((uint8_t *)(&magic), EEPROM.getDataPtr() + EEP_DEBUG_FLAG, 4);
+
+    if (magic == 0x12345678) flag = EEPROM.getDataPtr() + EEP_DEBUG_FLAG + 4;
+
+    if (*flag == '1') debug_enabled = true;
+
+    if (debug_enabled)
+    {
+        Serial1.begin(74880);
+        //Serial1.setDebugOutput(true);
+        Serial1.println("\n\n");
+    }
+    else
+    {
+        pinMode(STATUS_LED, OUTPUT);
+        digitalWrite(STATUS_LED, 1);
+    }
 
     if (!data_stream_rx_buffer) data_stream_rx_buffer = new CircularBuffer(512);
     if (!data_stream_tx_buffer) data_stream_tx_buffer = new CircularBuffer(1024);
@@ -1321,7 +1393,6 @@ void network_setup()
     Serial1.printf("Node name: %s\n", NODE_NAME);
     Serial1.printf("FW version: %s\n", FW_VERSION);
     Serial1.printf("Chip id: 0x%08x\n", system_get_chip_id());
-
     Serial1.print("Free heap size: ");
     Serial1.println(system_get_free_heap_size());
 
@@ -1348,11 +1419,12 @@ void network_setup()
 
     //start the forever timer to drive the status leds
 
-#if !ENABLE_DEBUG_ON_UART1
-    os_timer_disarm(&timer_network_status_indicate[0]);
-    os_timer_setfn(&timer_network_status_indicate[0], network_status_indicate_timer_fn, NULL);
-    os_timer_arm(&timer_network_status_indicate[0], 1, false);
-#endif
+    if (!debug_enabled)
+    {
+        os_timer_disarm(&timer_network_status_indicate[0]);
+        os_timer_setfn(&timer_network_status_indicate[0], network_status_indicate_timer_fn, NULL);
+        os_timer_arm(&timer_network_status_indicate[0], 1, false);
+    }
 
     /* get the smart config flag */
     uint8_t config_flag = *(EEPROM.getDataPtr() + EEP_OFFSET_CFG_FLAG);
@@ -1372,8 +1444,6 @@ void network_setup()
 /**
  * Blink the LEDs according to the status of network connection
  */
-#if !ENABLE_DEBUG_ON_UART1
-
 void network_status_indicate_timer_fn(void *arg)
 {
     static uint8_t last_main_status = 0xff;
@@ -1468,9 +1538,6 @@ void network_status_indicate_timer_fn(void *arg)
 
     last_main_status = conn_status[0];
 }
-
-#endif
-
 
 
 
