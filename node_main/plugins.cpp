@@ -129,6 +129,8 @@ bool __plugin_setting_dataxserver(void *class_ptr, char *method_name, void *inpu
     Serial1.printf("%s\r\n", ip);
     if (extract_ip(ip, EEPROM.getDataPtr() + EEP_DATA_SERVER_IP))
     {
+        memcpy(EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR, ip, strlen(ip));
+        memset(EEPROM.getDataPtr() + EEP_DATA_SERVER_ADDR + strlen(ip) , 0, 1);
         EEPROM.commit();
         stream_print(STREAM_CMD, TYPE_STRING, "\"ok\"");
         response_msg_close(STREAM_CMD);
