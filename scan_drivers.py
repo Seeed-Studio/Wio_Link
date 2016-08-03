@@ -375,7 +375,7 @@ if __name__ == '__main__':
         full_dir = os.path.join(grove_drivers_abs_dir, f)
         grove_info = {}
         grove_doc = {}
-        if os.path.isdir(full_dir):
+        if os.path.isdir(full_dir) and f != '.git':
             print full_dir
             files = parse_one_driver_dir(full_dir)
             class_file = get_class_header_file(files,f)
