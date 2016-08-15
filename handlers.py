@@ -460,7 +460,7 @@ class NodeCreateHandler(BaseHandler):
         email = user["email"]
         user_id = user["user_id"]
         node_id = self.gen_uuid_without_dash()
-        node_sn = md5.new(email+self.get_uuid()).hexdigest()
+        node_sn = md5.new(self.get_uuid()).hexdigest()
         node_key = md5.new(self.gen_token(email)).hexdigest()  #we need the key to be 32bytes long too
 
         cur = self.application.cur
