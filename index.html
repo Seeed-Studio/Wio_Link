@@ -119,6 +119,31 @@
 
 <h1 id="user-management-apis">User management APIs</h1>
 
+<p>The Wio server can host self user database - with the following APIs. But also the server can collaborate with external user system with a webhook mechanism, and based on this, we connect SEEED bazaar&rsquo;s user database with Wio. In the Wio App, the user registration and login are directed to SEEED bazaar&rsquo;s user portal, and the authentications are transferred to the Wio server if the credential is correct. </p>
+
+<p>So <strong>if you develop some system to interact with SEEED&rsquo;s Wio servers</strong>, please follow the chapter &ldquo;<a href="#use-seeed-39-s-user-system"><strong>Use SEEED&rsquo;s user system</strong></a>&rdquo;.</p>
+
+<h2 id="use-seeed-39-s-user-system">Use SEEED&rsquo;s user system</h2>
+
+<h3 id="sign-up-a-user">Sign-up a user</h3>
+
+<p>Please go to <a href="http://www.seeedstudio.com/register.html">http://www.seeedstudio.com/register.html</a> and finish the registration form.</p>
+
+<h3 id="login-to-get-the-user-token">Login to get the user token</h3>
+
+<p>Please go to <a href="https://wio.seeed.io/login">https://wio.seeed.io/login</a> and login with your SEEED account or Facebook account or Google+ account. After the successfully login, you will finally get a web page with some json string there. Please set down the token for further use.</p>
+<pre class="highlight json"><code><span class="p">{</span><span class="nt">"token"</span><span class="p">:</span><span class="w"> </span><span class="s2">"HHFLGW8dGRRGExMY"</span><span class="p">,</span><span class="w"> </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="mi">80733</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<h3 id="retreive-the-password">Retreive the password</h3>
+
+<p>Please go to <a href="http://www.seeedstudio.com/find_psw.html">http://www.seeedstudio.com/find_psw.html</a> and follow the instruction there.</p>
+
+<p><br>
+Currently we haven&rsquo;t opened an API system to invoke SEEED&rsquo;s user portal. </p>
+
+<p>The following APIs are for self deployed Wio servers.</p>
+
 <h2 id="create-a-user-account">Create a user account</h2>
 <pre class="highlight shell"><code>curl -d <span class="nv">email</span><span class="o">=[</span>email here] -d <span class="nv">password</span><span class="o">=[</span>password here] https://us.wio.seeed.io/v1/user/create
 </code></pre>
