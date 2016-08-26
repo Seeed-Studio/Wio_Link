@@ -23,33 +23,11 @@ Features:
 [Video: 3 Steps. 5 Minutes. Build IoT Device.](https://www.youtube.com/watch?v=P_SO_a6X-y0#action=share)
 
 
-
-
-## Developing Status
-
-Done:
-
-* Grove driver framework for cloud compiling
-* Talk between node and server via AES encryption
-* Property getting & action posting APIs
-* User management APIs
-* Nodes management APIs
-* Cloud compiling APIs
-* OTA control APIs
-* Mobile App 1st launch version, iOS + Android
-* Local broker server for Web of Things invoking.
-
-On the plan:
-
-* Integration with Seeed unified user login interface
-* More grove drivers and 3rd party module drivers continue to be integrated
-
-
 ## About the Server
 
 Currently we have two sandbox servers - one for international users while another for users inside China. Due to the (G)(F)(W), users in China mainland can not access the international server smoothly. There're options in the App to select the server. 
 
-The sandbox servers are free to use, but we can't guarantee the quality of the service persists good if the amount of connections becomes large. As the project is open sourced, we recommend users deploy their own server for private application. The server can be a local server or a VPS, even can be a lean computer like Raspberry Pi. See next section "Documentation" for the deployment guide. 
+The sandbox servers are free to use, but we can't guarantee the quality of the service persists good if the amount of connections becomes large. As the project is open sourced, we recommend users deploy their own server for private application. The server can be a local server or a VPS, even can be a lean computer like Raspberry Pi. See next section "Documentation" for the deployment guide. []()
 
 
 
@@ -66,7 +44,7 @@ A compatible module driver can be scanned by the server and be integrated into t
 
 The only difference between writing a Wio Link compatible driver and writing an Arduino compatible driver is that, you need to follow some rules to write the header file. It is for the scanning script to process it correctly. Please move to this [guide](https://github.com/Seeed-Studio/Wio_Link/wiki/How-to-write-module-driver-for-Wio-Link%3F) to see the rules.
 
-Users can pull request to this github repo to integrate the developed driver into the online compiling system, and at the same time into the mobile App. SEEED's staff will test the merged driver. If it's written correctly, we will accept the pull request and update the web services to let users use this module. For advanced users, we recommend to deploy a self server, to add 3rd party drivers immediately.
+Users can pull request to [this github repo](https://github.com/Seeed-Studio/Grove_Drivers_for_Wio) to integrate the developed driver into the online compiling system, and at the same time into the mobile App. SEEED's staff will test the merged driver. If it's written correctly, we will accept the pull request and update the web services to let users use this module. For advanced users, we recommend to deploy a self server, to add 3rd party drivers immediately.
 
 ## License
 
