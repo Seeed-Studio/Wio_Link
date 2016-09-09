@@ -261,6 +261,24 @@ inline void suli_uart_write(UART_T *uart, uint8_t data)
 int suli_uart_write_bytes(UART_T *uart, uint8_t *data, int len);
 
 /**
+ * print string on uart
+ * int suli_uart_print(UART_T *, uint8_t *, int)
+ */
+inline int suli_uart_print(UART_T *uart, char *str)
+{
+    (*uart)->print((const char *)str);
+}
+
+/**
+ * print string and new line on uart
+ * int suli_uart_println(UART_T *, uint8_t *, int)
+ */
+inline int suli_uart_println(UART_T *uart, char *str)
+{
+    (*uart)->println((const char *)str);
+}
+
+/**
  * write a float
  * num - number to write
  * decimal - x decimal point
@@ -311,6 +329,21 @@ inline int suli_uart_readable(UART_T *uart)
     return (*uart)->available();
 }
 
+/**
+ * The debug serial should be initialize by the firmware framework scope,
+ * and then be refered by the drivers. The firmware framework may control
+ * the enable state of debug serial.
+ *
+ * @param uart
+ */
+void suli_set_debug_serial(UART_T *uart);
+
+/**
+ * Get the pointer of the debug serial.
+ *
+ * @return UART_T*
+ */
+UART_T *suli_get_debug_serial();
 
 /***************************************************************************
  * Event related APIs

@@ -155,7 +155,7 @@ uint8_t suli_i2c_read_reg(I2C_T *i2c_device, uint8_t dev_addr, uint8_t reg_addr,
     return sum_len;
 }
 
-
+static UART_T *__suli_global_debug_serial = NULL;
 /**
  * void suli_uart_init(UART_T *, int pin_tx, int pin_rx, uint32_t baud)
  */
@@ -196,6 +196,21 @@ int suli_uart_write_bytes(UART_T *uart, uint8_t *data, int len)
         (*uart)->write(*(data + i));
     }
     return len;
+}
+
+void suli_set_debug_serial(UART_T *uart)
+{
+    __suli_global_debug_serial = uart;
+}
+
+UART_T* suli_get_debug_serial()
+{
+    if (!__suli_global_debug_serial)
+    {
+        __suli_global_debug_serial = (UART_T *)malloc(sizeof(UART_T));
+        *__suli_global_debug_serial = (HardwareSerial *)&Serial1;
+    }
+    return __suli_global_debug_serial;
 }
 
 /**
