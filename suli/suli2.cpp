@@ -420,3 +420,124 @@ void suli_timer_control_interval(TIMER_T *timer, uint32_t microseconds)
 {
     timer->interval_ticks = __suli_timer_microseconds_to_ticks(microseconds);
 }
+
+/**
+ *  Soft timer
+ */
+static TIMER_T *__soft_timer_list_head = NULL;
+static TIMER_T *__soft_timer_list_tail = NULL;
+
+void __suli_soft_timer_insert_entry(TIMER_T *src)
+{
+    uint32_t now = suli_millis();
+
+    src->fire_ticks = now + src->interval_ticks;
+
+    //search for the same timer
+    TIMER_T *pt = __soft_timer_list_head;
+
+    while (pt)
+    {
+        if (pt == src) return;
+        pt = pt->next;
+    }
+
+    if (__soft_timer_list_tail)
+    {
+        src->prev = __soft_timer_list_tail;
+        src->next = NULL;
+        __soft_timer_list_tail->next = src;
+        __soft_timer_list_tail = src;
+    } else
+    {
+        src->prev = NULL;
+        src->next = NULL;
+        __soft_timer_list_head = __soft_timer_list_tail = src;
+    }
+}
+
+/**
+ * This function should be put into the main loop,
+ * to drive the soft timer to be triggered
+ */
+void suli_soft_timer_loop()
+{
+    TIMER_T *pt = __soft_timer_list_head;
+
+    if (!pt) return;
+
+    uint32_t now = suli_millis();
+
+    while (pt)
+    {
+        if (now >= pt->fire_ticks)
+        {
+            pt->cb(pt->data);
+            suli_delay_ms(0);
+
+            if (pt->repeat)
+            {
+                pt->fire_ticks = now + pt->interval_ticks;
+            } else
+            {
+                //remove from chain
+                if (pt->prev)
+                {
+                    pt->prev->next = pt->next;
+                } else
+                {
+                    __soft_timer_list_head = pt->next;
+                }
+                if (pt->next)
+                {
+                    pt->next->prev = pt->prev;
+                } else
+                {
+                    __soft_timer_list_tail = pt->prev;
+                }
+            }
+        }
+        pt = pt->next;
+    }
+}
+
+void suli_soft_timer_install(TIMER_T *timer, uint32_t milliseconds, timer_callback_t cb, void *data,
+                             bool repeat = false)
+{
+    timer->cb = cb;
+    timer->interval_ticks = milliseconds;
+    timer->data = data;
+    timer->repeat = repeat;
+
+    __suli_soft_timer_insert_entry(timer);
+
+}
+
+void suli_soft_timer_remove(TIMER_T *timer)
+{
+    TIMER_T *pt = timer;
+
+    //remove from chain
+    if (pt->prev)
+    {
+        pt->prev->next = pt->next;
+    } else
+    {
+        __soft_timer_list_head = pt->next;
+    }
+    if (pt->next)
+    {
+        pt->next->prev = pt->prev;
+    } else
+    {
+        __soft_timer_list_tail = pt->prev;
+    }
+}
+
+void suli_soft_timer_control_interval(TIMER_T *timer, uint32_t milliseconds)
+{
+    timer->interval_ticks = milliseconds;
+}
+
+
+

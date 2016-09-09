@@ -356,9 +356,6 @@ void suli_event_trigger(EVENT_T *event, void *event_data);
 
 /***************************************************************************
  * Timer related APIs
- * This timer is not the one PWM used
- * The timer APIs implement a timer event loop based on hardware timers,
- * it's realtime so that it MUST NOT use the CPU too long.
  ***************************************************************************/
 typedef void (*timer_callback_t)(void *data);
 
@@ -373,6 +370,7 @@ typedef struct __timer_s
     bool                repeat;
 }TIMER_T;
 
+/* for esp8266, use timer0, it is not the one PWM used (timer1) */
 void __suli_timer_isr();
 
 void __suli_timer_hw_init();
@@ -396,6 +394,12 @@ inline void __suli_timer_set_timeout_ticks(uint32_t ticks)
 
 
 /** platform indepencent funtions*/
+
+/**-----------------------------------------
+ * Hardware timer APIs
+ * The hardware timer APIs implement a timer event loop based on hardware timers,
+ * it's realtime so that it MUST NOT use the CPU too long.
+ -----------------------------------------*/
 
 /**
  * Install a timer with interval microseconds
@@ -422,6 +426,35 @@ void suli_timer_remove(TIMER_T *timer);
  * @param microseconds
  */
 void suli_timer_control_interval(TIMER_T *timer, uint32_t microseconds);
+
+/**-----------------------------------------
+ * Software timer APIs
+ * The software timer is for those periodly occurred events/tasks which
+ * don't require realtime. The soft timer inserts fire-points inside the main loop,
+ * For non-RTOS platforms, the main loop does lots of things, and maybe delayed
+ * by suli_delay_xs(), so soft timer is not accurate at all.
+ * e.g. We install a soft timer whose fire time is 1s later, and next time the main
+ * loop reaches soft timer check function, it's already passed 2s, so the soft timer
+ * will fire then, but it's fired later than the time it desired.
+ -----------------------------------------*/
+
+/**
+ * Install a soft timer in the main loop
+ * Note that the time unit is millisecond
+ *
+ * @param timer
+ * @param milliseconds
+ * @param cb
+ * @param data
+ * @param repeat
+ */
+void suli_soft_timer_install(TIMER_T *timer, uint32_t milliseconds, timer_callback_t cb, void *data, bool repeat = false);
+
+void suli_soft_timer_remove(TIMER_T *timer);
+
+void suli_soft_timer_control_interval(TIMER_T *timer, uint32_t milliseconds);
+
+void suli_soft_timer_loop();
 
 
 #endif  //__SULI2_H__
