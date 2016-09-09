@@ -136,6 +136,7 @@ void wio_loop()
             setup();
             user_setup_done = true;
         }
+        suli_soft_timer_loop();
         loop();
     }
 }

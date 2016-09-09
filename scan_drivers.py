@@ -149,6 +149,16 @@ def parse_class_header_file (file):
     else:
         return ("can not find DESCRIPTION in %s"%file, {},{})
 
+    ##HACK_GUIDE_URL
+    hack_guide_url = re.findall(r'^//HACK_GUIDE_URL\s+(.+)', content, re.M)
+    print hack_guide_url
+    if hack_guide_url:
+        patterns["NeedHack"] = True
+        patterns["HackGuideURL"] = hack_guide_url[0].rstrip('\r')
+    else:
+        patterns["NeedHack"] = False
+        patterns["HackGuideURL"] = ""
+
     ##WIKI_URL
     wiki_url = re.findall(r'^//WIKI_URL\s+(.+)', content, re.M)
     print wiki_url
