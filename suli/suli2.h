@@ -65,7 +65,9 @@ long suli_map(long x, long in_min, long in_max, long out_min, long out_max);
 
 typedef int IO_T;
 
-#define SULI_INPUT    INPUT
+#define SULI_INPUT    INPUT     // the default high resistance input
+#define SULI_INPUT_PULLUP       INPUT_PULLUP
+#define SULI_INPUT_PULLDOWN     INPUT_PULLDOWN
 #define SULI_OUTPUT   OUTPUT
 #define SULI_HIGH     0x01
 #define SULI_LOW      0x00
@@ -107,6 +109,9 @@ typedef void (*interrupt_handler)(void *para);
 extern "C"
 void attachInterruptEx(uint8_t pin, interrupt_handler userFunc, int mode, void *para);
 
+/**
+ * with the arduino implementation, we can attach only 1 handler to 1 pin.
+ */
 void suli_pin_attach_interrupt_handler(IO_T *pio, interrupt_handler handler, int mode, void *para);
 
 
