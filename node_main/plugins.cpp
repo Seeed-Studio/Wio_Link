@@ -37,10 +37,15 @@ bool __plugin_pm_sleep(void *class_ptr, char *method_name, void *input_pack)
     Serial1.printf("deep sleep %lu sec\r\n", sec);
     writer_print(TYPE_STRING, "\"ok, deep sleep\"");
     response_msg_close(STREAM_DATA);
-    delay(100);
+
     //turn off grove's power
     digitalWrite(SWITCH_GROVE_POWER, 0);
 
+    uint32 cal1, cal2;
+    cal1 = system_rtc_clock_cali_proc();
+    Serial1.printf("cal 1  : %d.%d  \r\n", ((cal1*1000)>>12)/1000, ((cal1*1000)>>12)%1000);
+
+    delay(100);
     system_deep_sleep(sec * 1000000);
 
     return true;
