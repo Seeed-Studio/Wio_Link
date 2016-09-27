@@ -102,6 +102,8 @@
             The sleep will not be intermittently triggered. You need to call the sleep API every time you want the node to sleep.
             You can continue to send GET/POST requests after a sleep command has been executed, but the node will just return a 404 status code and a message saying it's offline.
             After sleep time, the node will automatically wake up and join the router within about 5 seconds. You do some stuff and put the node into sleep again.<br><br>
+            The sleep timer is a 32 bits counter, and the time length of every tick of this timer varies with the physique of the chip (5~8us/tick). The safe sleep time will be less
+            than 5 hours which will not overflow the sleep timer.<br><br>
             <strong>Note: Please take care of the initialization if any of the connected Grove modules needs a heat-up process.</strong></p>
     </div>
     <table class="table">
