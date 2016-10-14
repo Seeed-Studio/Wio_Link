@@ -1064,7 +1064,7 @@ class NodeGetResourcesHandler(NodeBaseHandler):
             self.vhost_url_base = '%s://%s' % (protocol, self.request.host)
 
         self.vhost_url_base = self.get_argument("data_server", self.vhost_url_base)
-        self.vhost_url_base = self.vhost_url_base.rstrip('/')
+        self.vhost_url_base = escape.url_unescape(self.vhost_url_base.rstrip('/'))  ##fix apache mod_proxy double-quote the URL for some deployment env
         #print self.vhost_url_base
 
         patt = r'^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:\d+)*(\/\w+\.\w+)*$'
