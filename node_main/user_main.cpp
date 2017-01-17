@@ -46,6 +46,7 @@ void user_rf_pre_init()
  */
 void wio_setup()
 {
+    Serial.end();  //ensure the uart0 is idle
     EEPROM.begin(4096);
     pinMode(FUNCTION_KEY, INPUT);
     pinMode(STATUS_LED, OUTPUT);
@@ -150,6 +151,11 @@ void wio_loop()
 extern "C"
 void user_init(void)
 {
+    //for mass production requirement
+    os_printf("user_fw_version:%s\n",FW_VERSION);
+    os_printf("----\n");
+    system_set_os_print(0);
+
     arduino_init();
 }
 

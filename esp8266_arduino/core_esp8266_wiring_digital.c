@@ -122,13 +122,13 @@ void ICACHE_RAM_ATTR interrupt_handler(void *arg) {
     {
         // to make ISR compatible to Arduino AVR model where interrupts are disabled
         // we disable them before we call the client ISR
-        uint32_t savedPS = xt_rsil(15); // stop other interrupts 
+        uint32_t savedPS = xt_rsil(15); // stop other interrupts
         handler->fn();
         xt_wsr_ps(savedPS);
     }
     if (handler->fn_ex && (handler->mode == CHANGE || (handler->mode & 1) == digitalRead(i)))
     {
-        uint32_t savedPS = xt_rsil(15); // stop other interrupts 
+        uint32_t savedPS = xt_rsil(15); // stop other interrupts
         handler->fn_ex(handler->para);
         xt_wsr_ps(savedPS);
     }
@@ -184,13 +184,14 @@ uint32_t interruptsState = 0;
 
 void initPins() {
   //Disable UART interrupts
-  system_set_os_print(0);
-  U0IE = 0;
-  U1IE = 0;
+  //system_set_os_print(0);
+  //U0IE = 0;
+  //U1IE = 0;
 
-  for (int i = 0; i <= 5; ++i) {
-    pinMode(i, INPUT);
-  }
+  pinMode(0, INPUT);
+  pinMode(4, INPUT);
+  pinMode(5, INPUT);
+
   // pins 6-11 are used for the SPI flash interface
   for (int i = 12; i <= 16; ++i) {
     pinMode(i, INPUT);
