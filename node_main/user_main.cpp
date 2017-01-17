@@ -151,9 +151,11 @@ void wio_loop()
 extern "C"
 void user_init(void)
 {
+#if MASS_PRODUCT_FW
     //for mass production requirement
     os_printf("user_fw_version:%s\n",FW_VERSION);
     os_printf("----\n");
+#endif
     system_set_os_print(0);
 
     arduino_init();
