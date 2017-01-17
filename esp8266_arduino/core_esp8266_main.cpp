@@ -141,9 +141,9 @@ void init_done() {
 
 
 void arduino_init(void) {
-    uart_div_modify(0, UART_CLK_FREQ / (115200));
+    //uart_div_modify(0, UART_CLK_FREQ / (115200));
 
-    init();  //disable uart0 debug, init wiring system: pins, timer1
+    init();  //init wiring system: pins, timer1
 
     initVariant();
 
