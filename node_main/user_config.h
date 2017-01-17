@@ -1,6 +1,8 @@
 #ifndef __USER_CONFIG_H__
 #define __USER_CONFIG_H__
 
+#define MASS_PRODUCT_FW             0
+
 #define FW_VERSION                  "1.2"
 
 #ifndef FUNCTION_KEY
