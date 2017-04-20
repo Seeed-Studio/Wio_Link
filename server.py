@@ -501,7 +501,7 @@ class myApplication(web.Application):
         except:
             pass
 
-        web.Application.__init__(self, handlers, debug=auto_reload_for_debug, template_path = 'templates')
+        web.Application.__init__(self, handlers, debug=auto_reload_for_debug, template_path='templates', websocket_ping_interval=30)
 
 class myApplication_OTA(web.Application):
 
