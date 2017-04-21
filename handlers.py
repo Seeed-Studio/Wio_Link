@@ -50,6 +50,7 @@ from tornado.options import define, options
 from tornado.log import *
 from tornado.concurrent import Future
 from tornado_cors import CorsMixin
+from tornado.ioloop import IOLoop
 
 TOKEN_SECRET = "!@#$%^&*RG)))))))JM<==TTTT==>((((((&^HVFT767JJH"
 
@@ -831,7 +832,6 @@ class NodeEventHandler(websocket.WebSocketHandler):
                 return c
         return None
 
-    @gen.coroutine
     def on_message(self, message):
         self.node_key = message
         if len(message) != 32:
@@ -847,7 +847,11 @@ class NodeEventHandler(websocket.WebSocketHandler):
 
         #clear the events buffered before any websocket client connected
         self.cur_conn.event_happened = []
+        
+        IOLoop.current().add_callback(self.fetch_event)
 
+    @gen.coroutine
+    def fetch_event(self):
         while self.connected:
             self.future = self.wait_event_post()
             event = None
@@ -855,14 +859,14 @@ class NodeEventHandler(websocket.WebSocketHandler):
                 event = yield gen.with_timeout(timedelta(seconds=5), self.future, io_loop=ioloop.IOLoop.current())
             except gen.TimeoutError:
                 if not self.cur_conn or self.cur_conn.killed:
-                    gen_log.debug("node %s is offline" % message)
-                    self.cur_conn = self.find_node(message)
+                    # gen_log.debug("node %s is offline" % self.node_key)
+                    self.cur_conn = self.find_node(self.node_key)
                     if not self.cur_conn:
                         self.node_offline()
             if event:
                 self.write_message(event)
             yield gen.moment
-
+            
     def wait_event_post(self):
         result_future = Future()
 
@@ -872,7 +876,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
             self.cur_conn.event_waiters.append(result_future)
 
         return result_future
-
+        
     def node_offline(self):
         try:
             self.write_message({"error":"node is offline"})
