@@ -452,3 +452,21 @@ bool GroveOLED12864::write_inverse_display(uint8_t inverse_or_not)
     }
     return true;
 }
+
+bool GroveOLED12864::write_rotate_display(uint8_t rotate_or_not)
+{
+    if (rotate_or_not)
+    {
+        oled_128x64_cmd(0xA1);
+        suli_delay_ms(5);
+        oled_128x64_cmd(0xC8);
+    }
+    else
+    {
+        oled_128x64_cmd(0xA0);
+        suli_delay_ms(5);
+        oled_128x64_cmd(0xC0);
+    }
+
+    return true;
+}
