@@ -492,12 +492,13 @@ class NodeListHandler(BaseHandler):
             nodes = []
             for r in rows:
                 online = False
-                for conn in self.conns:
-                    if r['node_sn'] == conn.sn and conn.online_status == True:
+                if r['node_sn'] in self.conns:
+                    conn = self.conns[r['node_sn']]
+                    if conn.online_status == True:
                         online = True
-                        break
                 board = r["board"] if r["board"] else "Wio Link v1.0"
-                nodes.append({"name":r["name"],"node_sn":r["node_sn"],"node_key":r['private_key'], "online":online, "dataxserver":r["dataxserver"], "board":board})
+                nodes.append({"name":r["name"], "node_sn":r["node_sn"], "node_key":r['private_key'], "online":online, \
+                              "dataxserver":r["dataxserver"], "board":board})
             self.resp(200, meta={"nodes":nodes})
         except Exception,e:
             self.resp(500,str(e))
@@ -645,8 +646,9 @@ class NodeReadWriteHandler(NodeBaseHandler):
         if not self.pre_request('get', uri):
             return
 
-        for conn in self.conns:
-            if conn.sn == node['node_sn'] and not conn.killed:
+        if node['node_sn'] in self.conns:
+            conn = self.conns[node['node_sn']]
+            if not conn.killed:
                 try:
                     cmd = "GET /%s\r\n"%(uri)
                     cmd = cmd.encode("ascii")
@@ -683,8 +685,9 @@ class NodeReadWriteHandler(NodeBaseHandler):
         if not self.pre_request('post', uri):
             return
 
-        for conn in self.conns:
-            if conn.sn == node['node_sn'] and not conn.killed:
+        if node['node_sn'] in self.conns:
+            conn = self.conns[node['node_sn']]
+            if not conn.killed:
                 try:
                     cmd = "POST /%s\r\n"%(uri)
                     cmd = cmd.encode("ascii")
@@ -739,8 +742,9 @@ class NodeFunctionHandler(NodeReadWriteHandler):
             self.resp(400, "Bad URL - function's argument should in post body")
             return
 
-        for conn in self.conns:
-            if conn.sn == self.node['node_sn'] and not conn.killed:
+        if self.node['node_sn'] in self.conns:
+            conn = self.conns[self.node['node_sn']]
+            if not conn.killed:
                 try:
                     cmd = "POST /%s/%s\r\n"%(uri.strip('/'), arg)
                     cmd = cmd.encode("ascii")
@@ -775,8 +779,9 @@ class NodeSettingHandler(NodeReadWriteHandler):
                 return True
 
         if req_type == 'post' and uri.find('setting/drop') >= 0:
-            for conn in self.conns:
-                if conn.sn == self.node['node_sn'] and not conn.killed:
+            if self.node['node_sn'] in self.conns:
+                conn = self.conns[self.node['node_sn']]
+                if not conn.killed:
                     conn.kill_myself()
                     self.resp(200)
                     return False
@@ -826,8 +831,8 @@ class NodeEventHandler(websocket.WebSocketHandler):
 
         self.connected = False
 
-    def find_node(self, key):
-        for c in self.conns:
+    def find_node_conn(self, key):
+        for sn, c in self.conns.iteritems():
             if c.private_key == key and not c.killed:
                 return c
         return None
@@ -839,43 +844,38 @@ class NodeEventHandler(websocket.WebSocketHandler):
             self.connected = False
             self.close()
 
-        self.cur_conn = self.find_node(message)
+        self.cur_conn = self.find_node_conn(message.strip())
 
         if not self.cur_conn:
             self.node_offline()
             return
 
-        #clear the events buffered before any websocket client connected
-        self.cur_conn.event_happened = []
+        self.node_sn = self.cur_conn.sn
         
         IOLoop.current().add_callback(self.fetch_event)
 
     @gen.coroutine
     def fetch_event(self):
         while self.connected:
-            self.future = self.wait_event_post()
+            self.future = Future()
             event = None
             try:
+                self.cur_conn.event_waiters.append(self.future)
                 event = yield gen.with_timeout(timedelta(seconds=5), self.future, io_loop=ioloop.IOLoop.current())
             except gen.TimeoutError:
-                if not self.cur_conn or self.cur_conn.killed:
-                    # gen_log.debug("node %s is offline" % self.node_key)
-                    self.cur_conn = self.find_node(self.node_key)
-                    if not self.cur_conn:
-                        self.node_offline()
+                if self.node_sn in self.conns and not self.conns[self.node_sn].killed:
+                    self.cur_conn = self.conns[self.node_sn]
+                else:
+                    self.cur_conn = None
+                
+                if not self.cur_conn:
+                    self.node_offline()
+                    break
+            except Exception, e:
+                gen_log.error('Websocket error when fetch_event: %s' % str(e))
             if event:
                 self.write_message(event)
             yield gen.moment
-            
-    def wait_event_post(self):
-        result_future = Future()
-
-        if len(self.cur_conn.event_happened) > 0:
-            result_future.set_result(self.cur_conn.event_happened.pop(0))
-        else:
-            self.cur_conn.event_waiters.append(result_future)
-
-        return result_future
         
     def node_offline(self):
         try:
@@ -1240,23 +1240,16 @@ class FirmwareBuildingHandler(NodeBaseHandler):
         if not node:
             return
 
-        cur_conn = None
-
-        for conn in self.conns:
-            if conn.private_key == node['private_key'] and not conn.killed:
-                cur_conn = conn
-                break
-
-        if not cur_conn:
+        if node["node_sn"] not in self.conns:
             self.resp(404, "Node is offline")
             return
-
-        self.cur_conn = cur_conn
 
         self.user_id = node["user_id"]
         self.node_name = node["name"]
         self.node_id = node["node_id"]
         self.node_sn = node["node_sn"]
+
+        conn = self.conns[self.node_sn]
 
         cur_dir = os.path.split(os.path.realpath(__file__))[0]
         user_build_dir = cur_dir + '/users_build/' + str(self.user_id) + '_' + self.node_sn
@@ -1427,16 +1420,9 @@ class FirmwareBuildingHandler(NodeBaseHandler):
             self.application.conn.commit()
 
         #query the connection status again
-        if self.cur_conn not in self.conns:
-            cur_conn = None
-
-            for conn in self.conns:
-                if conn.sn == self.node_sn and not conn.killed:
-                    cur_conn = conn
-                    break
-            self.cur_conn = cur_conn
-
-        if not self.cur_conn or self.cur_conn not in self.conns:
+        if self.node_sn in self.conns:
+            self.cur_conn = self.conns[self.node_sn]
+        else:
             gen_log.info('Node is offline, sn: %s, name: %s' % (self.node_sn, self.node_name))
             state = ("error", "Node is offline")
             self.send_notification(state)
@@ -1453,7 +1439,7 @@ class FirmwareBuildingHandler(NodeBaseHandler):
 
                 cmd = "OTA\r\n"
                 cmd = cmd.encode("ascii")
-                self.cur_conn.submit_cmd (cmd)
+                self.cur_conn.submit_cmd(cmd)
 
                 yield gen.with_timeout(timedelta(seconds=10), self.cur_conn.ota_notify_done_future, io_loop=ioloop.IOLoop.current())
                 break

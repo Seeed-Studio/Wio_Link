@@ -29,6 +29,8 @@ import re
 import hashlib
 import hmac
 import binascii
+import os
+import psutil
 from Crypto.Cipher import AES
 from Crypto import Random
 
@@ -52,34 +54,38 @@ pad = lambda s: s if (len(s) % BS == 0) else (s + (BS - len(s) % BS) * chr(0) )
 unpad = lambda s : s.rstrip(chr(0))
 
 PENDING_REQ_CNT = 10
+HEARTBEAT_PERIOD_SEC = 60
+HEARTBEAT_FAST_PING_DELAY_SEC = 3
+HEARTBEAT_NEGATIVE_CHECK_DELAY_SEC = 10
+STATISTICS_PERIOD_SEC = 120
 
 class DeviceConnection(object):
 
     state_waiters = {}
     state_happened = {}
 
-    def __init__ (self, device_server, stream, address):
+    def __init__ (self, device_server, stream, address, conn_pool):
         self.fw_version = 0.0
         self.recv_msg_cond = Condition()
         self.recv_msg = {}
         self.send_msg_sem = Semaphore(1)
         self.pending_request_cnt = 0
         self.device_server = device_server
+        self.device_server_conn_pool = conn_pool
         self.stream = stream
         self.address = address
         self.stream.set_nodelay(True)
+        self.stream.set_close_callback(self.on_close)
         self.timeout_handler_onlinecheck = None
         self.timeout_handler_offline = None
         self.killed = False
+        self.is_junk = False
         self.sn = ""
         self.private_key = ""
         self.node_id = 0
         self.iv = None
         self.cipher_down = None
         self.cipher_up = None
-
-        #self.state_waiters = []
-        #self.state_happened = []
 
         self.event_waiters = []
         self.event_happened = []
@@ -100,7 +106,7 @@ class DeviceConnection(object):
         try:
             self._wait_hello_future = self.stream.read_bytes(64) #read 64bytes: 32bytes SN + 32bytes signature signed with private key
             str1 = yield gen.with_timeout(timedelta(seconds=10), self._wait_hello_future,
-                                         io_loop=ioloop.IOLoop.current())
+                                          io_loop=ioloop.IOLoop.current())
             self.idle_time = 0  #reset the idle time counter
 
             if len(str1) != 64:
@@ -163,8 +169,19 @@ class DeviceConnection(object):
                 self.private_key = key
                 self.node_id = str(node['node_id'])
                 gen_log.info("valid hello packet from node %s" % self.node_id)
-                #remove the junk connection of the same sn
-                ioloop.IOLoop.current().add_callback(self.device_server.remove_junk_connection, self)
+
+                # remove the junk connection of the same thing
+                if self.sn in self.device_server_conn_pool:
+                    gen_log.info("%s device server will remove one junk connection of same sn: %s"% (self.device_server.role, self.sn))
+                    self.device_server_conn_pool[self.sn].kill_junk()
+
+                # save into conn pool
+                self.device_server_conn_pool[self.sn] = self
+                gen_log.info('>>>>>>>>>>>>>>>>>>>>>')
+                gen_log.info('channel: %s' % self.device_server.role)
+                gen_log.info('size of conn pool: %d' % len(self.device_server_conn_pool))
+                gen_log.info('<<<<<<<<<<<<<<<<<<<<<')
+
                 #init aes
                 self.iv = Random.new().read(AES.block_size)
                 self.cipher_down = AES.new(key, AES.MODE_CFB, self.iv, segment_size=128)
@@ -192,8 +209,6 @@ class DeviceConnection(object):
             self.kill_myself()
             raise gen.Return(2)
 
-        #ioloop.IOLoop.current().add_future(self._serving_future, lambda future: future.result())
-
     @gen.coroutine
     def _loop_reading_input (self):
         line = ""
@@ -209,11 +224,12 @@ class DeviceConnection(object):
                     #reset the timeout
                     if self.timeout_handler_onlinecheck:
                         ioloop.IOLoop.current().remove_timeout(self.timeout_handler_onlinecheck)
-                    self.timeout_handler_onlinecheck = ioloop.IOLoop.current().call_later(60, self._online_check)
+                    self.timeout_handler_onlinecheck = ioloop.IOLoop.current().call_later(HEARTBEAT_PERIOD_SEC, self._online_check)
 
                     if self.timeout_handler_offline:
                         ioloop.IOLoop.current().remove_timeout(self.timeout_handler_offline)
-                    self.timeout_handler_offline = ioloop.IOLoop.current().call_later(70, self._callback_when_offline)
+                    self.timeout_handler_offline = ioloop.IOLoop.current().call_later(HEARTBEAT_PERIOD_SEC + HEARTBEAT_NEGATIVE_CHECK_DELAY_SEC, \
+                                                                                      self._callback_when_offline)
 
                     index = line.find('\r\n')
                     piece = line[:index+2]
@@ -265,19 +281,17 @@ class DeviceConnection(object):
                         if state:
                             #print self.state_waiters
                             #print self.state_happened
-                            if self.state_waiters and self.sn in self.state_waiters and len(self.state_waiters[self.sn]) > 0:
+                            if self.sn in DeviceConnection.state_waiters and len(DeviceConnection.state_waiters[self.sn]) > 0:
                                 f = self.state_waiters[self.sn].pop(0)
                                 f.set_result(state)
-                                if len(self.state_waiters[self.sn]) == 0:
-                                    del self.state_waiters[self.sn]
-                            elif self.state_happened and self.sn in self.state_happened:
-                                self.state_happened[self.sn].append(state)
+                                if len(DeviceConnection.state_waiters[self.sn]) == 0:
+                                    del DeviceConnection.state_waiters[self.sn]
+                            elif self.sn in DeviceConnection.state_happened:
+                                DeviceConnection.state_happened[self.sn].append(state)
                             else:
-                                self.state_happened[self.sn] = [state]
+                                DeviceConnection.state_happened[self.sn] = [state]
                         elif event:
-                            if len(self.event_waiters) == 0:
-                                self.event_happened.append(event)
-                            else:
+                            if len(self.event_waiters) > 0:
                                 for future in self.event_waiters:
                                     future.set_result(event)
                                 self.event_waiters = []
@@ -285,11 +299,11 @@ class DeviceConnection(object):
                             self.recv_msg = json_obj
                             self.recv_msg_cond.notify()
                             yield gen.moment
-                    except Exception,e:
+                    except Exception, e:
                         gen_log.warn("Node %s: %s" % (self.node_id ,str(e)))
 
             except iostream.StreamClosedError:
-                gen_log.error("StreamClosedError when reading from node %s" % self.node_id)
+                gen_log.error("StreamClosedError when reading from node %s on %s channel" % (self.node_id, self.device_server.role))
                 self.kill_myself()
                 return
             except ValueError:
@@ -308,15 +322,15 @@ class DeviceConnection(object):
             yield self.secure_write("##PING##")
             if self.timeout_handler_onlinecheck:
                 ioloop.IOLoop.current().remove_timeout(self.timeout_handler_onlinecheck)
-            self.timeout_handler_onlinecheck = ioloop.IOLoop.current().call_later(3, self._online_check)
+            self.timeout_handler_onlinecheck = ioloop.IOLoop.current().call_later(HEARTBEAT_FAST_PING_DELAY_SEC, self._online_check)
         except iostream.StreamClosedError:
-            gen_log.error("StreamClosedError when send ping to node %s" % self.node_id)
+            gen_log.error("StreamClosedError when send ping to node %s on %s channel" % (self.node_id, self.device_server.role))
             if self.timeout_handler_offline:
                 ioloop.IOLoop.current().remove_timeout(self.timeout_handler_offline)
             self.kill_myself()
 
     def _callback_when_offline(self):
-        gen_log.error("no answer from node %s, kill" % self.node_id)
+        gen_log.error("no heartbeat answer from node %s on %s channel, kill" % (self.node_id, self.device_server.role))
         self.kill_myself()
 
 
@@ -335,36 +349,17 @@ class DeviceConnection(object):
         elif ret >= 100:
             return
 
+        if self.timeout_handler_onlinecheck:
+            ioloop.IOLoop.current().remove_timeout(self.timeout_handler_onlinecheck)
+        self.timeout_handler_onlinecheck = ioloop.IOLoop.current().call_later(HEARTBEAT_PERIOD_SEC, self._online_check)
+
+        if self.timeout_handler_offline:
+            ioloop.IOLoop.current().remove_timeout(self.timeout_handler_offline)
+        self.timeout_handler_offline = ioloop.IOLoop.current().call_later(HEARTBEAT_PERIOD_SEC + HEARTBEAT_NEGATIVE_CHECK_DELAY_SEC, \
+                                                                          self._callback_when_offline)
+        
         ## loop reading the stream input
-        self._loop_reading_input()
-
-        if self.timeout_handler_onlinecheck:
-            ioloop.IOLoop.current().remove_timeout(self.timeout_handler_onlinecheck)
-        self.timeout_handler_onlinecheck = ioloop.IOLoop.current().call_later(60, self._online_check)
-
-        if self.timeout_handler_offline:
-            ioloop.IOLoop.current().remove_timeout(self.timeout_handler_offline)
-        self.timeout_handler_offline = ioloop.IOLoop.current().call_later(70, self._callback_when_offline)
-
-
-    def kill_myself (self):
-        if self.killed:
-            return
-        self.sn = ""
-        ioloop.IOLoop.current().add_callback(self.device_server.remove_connection, self)
-        self.stream.close()
-        self.killed = True
-
-    def kill_by_server(self):
-        self.send_msg_sem.release()
-        self.stream.close()
-
-        if self.timeout_handler_onlinecheck:
-            ioloop.IOLoop.current().remove_timeout(self.timeout_handler_onlinecheck)
-
-        if self.timeout_handler_offline:
-            ioloop.IOLoop.current().remove_timeout(self.timeout_handler_offline)
-
+        yield self._loop_reading_input()
 
     @gen.coroutine
     def submit_cmd (self, cmd):
@@ -408,60 +403,63 @@ class DeviceConnection(object):
             self.send_msg_sem.release()  #inc the semaphore value to 1
             self.pending_request_cnt -= 1
 
+    def kill_myself(self):
+        if self.killed:
+            return
+        self.stream.close()
+        self.killed = True
+
+    def kill_junk(self):
+        self.is_junk = True
+        self.kill_myself()
+
+    def on_close(self):
+
+        gen_log.debug("i'm closed on %s channel, %s..." % (self.device_server.role, self))
+
+        self.send_msg_sem.release()
+
+        if self.timeout_handler_onlinecheck:
+            ioloop.IOLoop.current().remove_timeout(self.timeout_handler_onlinecheck)
+            self.timeout_handler_onlinecheck = None
+
+        if self.timeout_handler_offline:
+            ioloop.IOLoop.current().remove_timeout(self.timeout_handler_offline)
+            self.timeout_handler_offline = None
+
+        if self.sn in self.device_server_conn_pool and self.device_server_conn_pool[self.sn] == self:
+            del self.device_server_conn_pool[self.sn]
+
+        self.sn = ""
+        self.stream.set_close_callback(None)
+        # break the ref circle
+        self.stream = None
+        self.address = None
+        self.device_server_conn_pool = None
+        self.device_server = None
+
 
 class DeviceServer(TCPServer):
 
-    accepted_xchange_conns = []
-    accepted_ota_conns = []
+    accepted_xchange_conns = {}
+    accepted_ota_conns = {}
 
     def __init__ (self, db_conn, cursor, role):
         self.conn = db_conn
         self.cur = cursor
         self.role = role
-        TCPServer.__init__(self)
-
-
-    def handle_stream(self, stream, address):
-        conn = DeviceConnection(self, stream,address)
 
         if self.role == 'ota':
-            self.accepted_ota_conns.append(conn)
-            gen_log.info("%s device server accepted conns: %d"% (self.role, len(self.accepted_ota_conns)))
+            self.conn_pool = DeviceServer.accepted_ota_conns
         else:
-            self.accepted_xchange_conns.append(conn)
-            gen_log.info("%s device server accepted conns: %d"% (self.role, len(self.accepted_xchange_conns)))
+            self.conn_pool = DeviceServer.accepted_xchange_conns
+        
+        TCPServer.__init__(self)
 
+    @gen.coroutine
+    def handle_stream(self, stream, address):
+        conn = DeviceConnection(self, stream, address, self.conn_pool)
         conn.start_serving()
-
-    def remove_connection (self, conn):
-        gen_log.info("%s device server will remove connection: %s" % (self.role, str(conn)))
-        try:
-            if self.role == 'ota':
-                self.accepted_ota_conns.remove(conn)
-            else:
-                self.accepted_xchange_conns.remove(conn)
-            del conn
-        except:
-            pass
-
-    def remove_junk_connection (self, conn):
-        try:
-            connections = self.accepted_xchange_conns
-            if self.role == 'ota':
-                connections = self.accepted_ota_conns
-            for c in connections:
-                if c.sn == conn.sn and c != conn :
-                    c.killed = True
-                    c.kill_by_server()
-                    #clear waiting futures
-                    gen_log.info("%s device server removed one junk connection of same sn: %s"% (self.role, c.sn))
-                    connections.remove(c)
-                    del c
-                    break
-        except Exception,e:
-            gen_log.error(e)
-
-
 
 class myApplication(web.Application):
 
@@ -516,11 +514,43 @@ class myApplication_OTA(web.Application):
 
         web.Application.__init__(self, handlers)
 
+class Statistics(object):
+
+    def __init__(self):
+        self.base_mem = 0
+        self.pid = os.getpid()
+        self.report_statistics()
+        ioloop.PeriodicCallback(self.report_statistics, STATISTICS_PERIOD_SEC * 1000).start()
+
+    def sizeof_fmt(self, num, suffix='B'):
+        for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+            if abs(num) < 1024.0:
+                return "%3.1f%s%s" % (num, unit, suffix)
+            num /= 1024.0
+        return "%.1f%s%s" % (num, 'Yi', suffix)
+
+    def report_statistics(self):
+        rss_size = psutil.Process(self.pid).memory_info().rss
+        cnt1 = len(DeviceServer.accepted_xchange_conns)
+        cnt2 = len(DeviceServer.accepted_ota_conns)
+        mem_per_conn = 0
+        if (cnt1 + cnt2) == 0:
+            if rss_size > self.base_mem:
+                self.base_mem = rss_size
+        else:
+            mem_per_conn = (rss_size - self.base_mem) / (cnt1 + cnt2)
+
+        gen_log.info('>>>>>>>>>>>>>>>>>>>>>')
+        gen_log.info('conn pool size of xchange: {}'.format(cnt1))
+        gen_log.info('conn pool size of ota    : {}'.format(cnt2))
+        gen_log.info('rough memory per conn    : {}'.format(self.sizeof_fmt(mem_per_conn)))
+        gen_log.info('<<<<<<<<<<<<<<<<<<<<<')
 
 def main():
 
     ###--log_file_prefix=./server.log
-    ###--logging=debug
+    ###--logging=debug  
+
     enable_pretty_logging()
     options.parse_command_line()
 
@@ -551,6 +581,8 @@ def main():
 
     tcp_server2 = DeviceServer(conn, cur, 'ota')
     tcp_server2.listen(8001)
+
+    stat = Statistics()
 
     ioloop.IOLoop.current().start()
 
