@@ -33,6 +33,7 @@ import os
 import psutil
 from Crypto.Cipher import AES
 from Crypto import Random
+import logging
 
 from tornado.httpserver import HTTPServer
 from tornado.tcpserver import TCPServer
@@ -48,6 +49,9 @@ from tornado.locks import Semaphore, Condition
 
 import config as server_config
 from handlers import *
+from cache import *
+
+options.define('suppress_access_log', default=False, help='whether to suppress the access_log of tornado.log')
 
 BS = AES.block_size
 pad = lambda s: s if (len(s) % BS == 0) else (s + (BS - len(s) % BS) * chr(0) )
@@ -357,7 +361,7 @@ class DeviceConnection(object):
             ioloop.IOLoop.current().remove_timeout(self.timeout_handler_offline)
         self.timeout_handler_offline = ioloop.IOLoop.current().call_later(HEARTBEAT_PERIOD_SEC + HEARTBEAT_NEGATIVE_CHECK_DELAY_SEC, \
                                                                           self._callback_when_offline)
-        
+
         ## loop reading the stream input
         yield self._loop_reading_input()
 
@@ -453,7 +457,7 @@ class DeviceServer(TCPServer):
             self.conn_pool = DeviceServer.accepted_ota_conns
         else:
             self.conn_pool = DeviceServer.accepted_xchange_conns
-        
+
         TCPServer.__init__(self)
 
     @gen.coroutine
@@ -498,6 +502,9 @@ class myApplication(web.Application):
             auto_reload_for_debug = server_config.auto_reload_for_debug
         except:
             pass
+
+        self.cache = CacheInventory(1000, 10)  # max 1000 caching items, clean expired items every 10 seconds
+        self.cache_expire = 60  # expire after 60 seconds
 
         web.Application.__init__(self, handlers, debug=auto_reload_for_debug, template_path='templates', websocket_ping_interval=30)
 
@@ -549,7 +556,7 @@ class Statistics(object):
 def main():
 
     ###--log_file_prefix=./server.log
-    ###--logging=debug  
+    ###--logging=debug
 
     enable_pretty_logging()
     options.parse_command_line()
@@ -583,6 +590,11 @@ def main():
     tcp_server2.listen(8001)
 
     stat = Statistics()
+
+    if options.suppress_access_log:
+        access_log = logging.getLogger('tornado.access')
+        access_log.propagate = False
+        access_log.setLevel(logging.CRITICAL)
 
     ioloop.IOLoop.current().start()
 
