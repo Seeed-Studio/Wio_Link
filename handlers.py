@@ -598,14 +598,17 @@ class NodeBaseHandler(BaseHandler):
                 token = None
         gen_log.debug("node token:"+ str(token))
         if token:
-            try:
-                cur = self.application.cur
-                cur.execute('select * from nodes where private_key="%s"'%token)
-                rows = cur.fetchall()
-                if len(rows) > 0:
-                    node = rows[0]
-            except:
-                node = None
+            node = self.application.cache.get(token)
+            if not node:
+                try:
+                    cur = self.application.cur
+                    cur.execute('select * from nodes where private_key="%s"'%token)
+                    rows = cur.fetchall()
+                    if len(rows) > 0:
+                        node = rows[0]
+                        self.application.cache.add(token, node, self.application.cache_expire)
+                except:
+                    node = None
         else:
             node = None
 
@@ -851,7 +854,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
             return
 
         self.node_sn = self.cur_conn.sn
-        
+
         IOLoop.current().add_callback(self.fetch_event)
 
     @gen.coroutine
@@ -867,7 +870,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
                     self.cur_conn = self.conns[self.node_sn]
                 else:
                     self.cur_conn = None
-                
+
                 if not self.cur_conn:
                     self.node_offline()
                     break
@@ -876,7 +879,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
             if event:
                 self.write_message(event)
             yield gen.moment
-        
+
     def node_offline(self):
         try:
             self.write_message({"error":"node is offline"})
