@@ -46,7 +46,7 @@ void user_rf_pre_init()
  */
 void wio_setup()
 {
-    Serial.end();  //ensure the uart0 is idle
+    //Serial.end();  //ensure the uart0 is idle
     EEPROM.begin(4096);
     pinMode(FUNCTION_KEY, INPUT);
     pinMode(STATUS_LED, OUTPUT);
@@ -83,6 +83,12 @@ void wio_setup()
     }
 
     network_setup();
+
+    //fix: watch dog caused reboot when Serial1 is enabled for printing debug messages
+    //Serial1.begin() might affect UART0, which causes UART0's pins can't be used as GPIO again,
+    //Here we clear the configuration for UART0, if any Grove uses UART0, the rpc_server_init will initialize UART0 then.
+    U0IE = 0;
+
     rpc_server_init();
 }
 

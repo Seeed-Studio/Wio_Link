@@ -1227,8 +1227,12 @@ void network_normal_mode(int config_flag)
     }
 
     Serial1.printf("connect to ssid %s with passwd %s\r\n", config.ssid, config.password);
+    Serial1.flush();
+
     wifi_station_disconnect();
     wifi_station_connect(); //connect with saved config in flash
+
+    delay(100);  //suspend rpc_server_init for a while to avoid big power vibration of Grove modules initialization
 
     /* start to check IP */
     get_ip_retry_cnt = 0;
