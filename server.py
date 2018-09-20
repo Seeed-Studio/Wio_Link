@@ -50,6 +50,7 @@ from tornado.locks import Semaphore, Condition
 import config as server_config
 from handlers import *
 from cache import *
+from coroutine_msgbus import *
 
 options.define('suppress_access_log', default=False, help='whether to suppress the access_log of tornado.log')
 
@@ -86,7 +87,8 @@ class DeviceConnection(object):
         self.is_junk = False
         self.sn = ""
         self.private_key = ""
-        self.node_id = 0
+        self.node_id = ""
+        self.user_id = ""
         self.iv = None
         self.cipher_down = None
         self.cipher_up = None
@@ -172,6 +174,7 @@ class DeviceConnection(object):
                 self.sn = sn
                 self.private_key = key
                 self.node_id = str(node['node_id'])
+                self.user_id = str(node['user_id'])
                 gen_log.info("valid hello packet from node %s" % self.node_id)
 
                 # remove the junk connection of the same thing
@@ -199,6 +202,10 @@ class DeviceConnection(object):
                 cipher_text = self.iv + self.cipher_down.encrypt(pad("hello"))
                 gen_log.debug("cipher text: "+ cipher_text.encode('hex'))
                 self.stream.write(cipher_text)
+
+                user_event = {"node_sn": self.sn, "event_type": "stat", "event_data": {"online": True, "at": self.device_server.role}}
+                CoEventBus().broadcast('/event/users/{}'.format(self.user_id), user_event)
+
                 raise gen.Return(0)
             else:
                 self.stream.write("sorry\r\n")
@@ -278,10 +285,14 @@ class DeviceConnection(object):
                         elif json_obj['msg_type'] == 'event':
                             event = json_obj
                             event.pop('msg_type')
+                            user_event = {"node_sn": self.sn, "event_type": "grove", "event_data": event['msg']}
+                            CoEventBus().broadcast('/event/users/{}'.format(self.user_id), user_event)
+
                         gen_log.debug("state: ")
                         gen_log.debug(state)
                         gen_log.debug("event: ")
                         gen_log.debug(event)
+
                         if state:
                             #print self.state_waiters
                             #print self.state_happened
@@ -412,6 +423,9 @@ class DeviceConnection(object):
             return
         self.stream.close()
         self.killed = True
+        if not self.is_junk and self.user_id:
+            user_event = {"node_id": self.node_id, "event_type": "stat", "event_data": {"online": False, "at": self.device_server.role}}
+            CoEventBus().broadcast('/event/users/{}'.format(self.user_id), user_event)
 
     def kill_junk(self):
         self.is_junk = True
@@ -481,8 +495,10 @@ class myApplication(web.Application):
         (r"/v1/boards/list[/]?", BoardsListHandler),
         (r"/v1/nodes/create[/]?", NodeCreateHandler),
         (r"/v1/nodes/list[/]?", NodeListHandler, dict(conns=DeviceServer.accepted_ota_conns)),
+        (r"/v1/nodes/info/(.+)[/]?", NodeInfoHandler, dict(conns=DeviceServer.accepted_ota_conns)),
         (r"/v1/nodes/rename[/]?", NodeRenameHandler),
         (r"/v1/nodes/delete[/]?", NodeDeleteHandler),
+        (r"/v1/nodes/event[/]?", NodesEventHandler,dict(conns=DeviceServer.accepted_xchange_conns)),
         (r"/v1/node/(?!event|config|resources|setting|function)(.+)", NodeReadWriteHandler, dict(conns=DeviceServer.accepted_xchange_conns, state_waiters=DeviceConnection.state_waiters, state_happened=DeviceConnection.state_happened)),
         (r"/v1/node/(?=function)(.+)", NodeFunctionHandler, dict(conns=DeviceServer.accepted_xchange_conns, state_waiters=DeviceConnection.state_waiters, state_happened=DeviceConnection.state_happened)),
         (r"/v1/node/(?=setting)(.+)", NodeSettingHandler, dict(conns=DeviceServer.accepted_ota_conns, state_waiters=DeviceConnection.state_waiters, state_happened=DeviceConnection.state_happened)),

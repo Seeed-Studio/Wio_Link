@@ -52,6 +52,8 @@ from tornado.concurrent import Future
 from tornado_cors import CorsMixin
 from tornado.ioloop import IOLoop
 
+from coroutine_msgbus import *
+
 TOKEN_SECRET = "!@#$%^&*RG)))))))JM<==TTTT==>((((((&^HVFT767JJH"
 
 
@@ -507,6 +509,40 @@ class NodeListHandler(BaseHandler):
     def post(self):
         self.resp(404, "Please get this url")
 
+
+class NodeInfoHandler(BaseHandler):
+    def initialize (self, conns):
+        self.conns = conns
+
+    @web.authenticated
+    def get (self, node_id):
+        cur = self.application.cur
+        try:
+            cur.execute("select * from nodes where node_id='%s'" % (node_id))
+            r = cur.fetchone()
+
+            if r:
+                online = False
+                if r['node_sn'] in self.conns:
+                    conn = self.conns[r['node_sn']]
+                    if conn.online_status == True:
+                        online = True
+                board = r["board"] if r["board"] else "Wio Link v1.0"
+                node = {"name":r["name"], "node_sn":r["node_sn"], "node_key":r['private_key'], "online":online,
+                        "dataxserver":r["dataxserver"], "board":board}
+                self.resp(200, meta=node)
+            else:
+                self.resp(400, "Node not exist")
+        except web.HTTPError:
+            raise
+        except Exception,e:
+            self.resp(500,str(e))
+            return
+
+    def post(self):
+        self.resp(404, "Please get this url")
+
+
 class NodeRenameHandler(BaseHandler):
     def get (self):
         self.resp(404, "Please post to this url")
@@ -807,6 +843,70 @@ class NodeSettingHandler(NodeReadWriteHandler):
                     self.application.conn.commit()
 
 
+class NodesEventHandler(websocket.WebSocketHandler):
+    def initialize (self, conns):
+        self.conns = conns
+        self.timeout_wait_token = None
+
+    def check_origin(self, origin):
+        return True
+
+    def get_user_by_token(self, token):
+        if token:
+            try:
+                cur = self.application.cur
+                cur.execute('select * from users where token="%s"' % token)
+                user = cur.fetchone()
+                gen_log.info("get current user in NodesEventHandler, id: %s, email: %s" % (user['user_id'], user['email']))
+            except:
+                user = None
+        else:
+            user = None
+
+        return user
+
+    def open(self):
+        gen_log.info("websocket open (NodesEventHandler) ...")
+        self.connected = True
+        self.timeout_wait_token = IOLoop.current().call_later(5, self.close)
+
+    def on_close(self):
+        gen_log.info("websocket close (NodesEventHandler)")
+        self.connected = False
+        if hasattr(self, 'event_q'):
+            self.event_listener.delete_queue(self.event_q)
+            self.event_listener = None
+
+    def on_message(self, message):
+        if self.timeout_wait_token:
+            IOLoop.current().remove_timeout(self.timeout_wait_token)
+            self.timeout_wait_token = None
+
+        if self.current_user:
+            return
+
+        self.user_token = message.strip()
+        self.current_user = self.get_user_by_token(self.user_token)
+
+        if not self.current_user:
+            self.write_message({"error":"invalid user token"})
+            self.connected = False
+            self.close()
+            return
+
+        self.event_listener = CoEventBus().listener('/event/users/{}'.format(self.current_user['user_id']))
+        self.event_q = self.event_listener.create_queue()
+        IOLoop.current().add_callback(self.fetch_event)
+
+    @gen.coroutine
+    def fetch_event(self):
+        while self.connected:
+            event = yield self.event_q.get()
+            if event:
+                self.write_message(event)
+            yield gen.moment
+
+
 class NodeEventHandler(websocket.WebSocketHandler):
     def initialize (self, conns):
         self.conns = conns
@@ -814,6 +914,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
         self.node_key = None
         self.connected = False
         self.future = None
+        self.timeout_wait_token = None
 
     def check_origin(self, origin):
         return True
@@ -821,6 +922,7 @@ class NodeEventHandler(websocket.WebSocketHandler):
     def open(self):
         gen_log.info("websocket open")
         self.connected = True
+        self.timeout_wait_token = IOLoop.current().call_later(5, self.close)
 
     def on_close(self):
         gen_log.info("websocket close")
@@ -841,11 +943,19 @@ class NodeEventHandler(websocket.WebSocketHandler):
         return None
 
     def on_message(self, message):
+        if self.timeout_wait_token:
+            IOLoop.current().remove_timeout(self.timeout_wait_token)
+            self.timeout_wait_token = None
+
+        if self.cur_conn:
+            return
+
         self.node_key = message
         if len(message) != 32:
-            self.write_message({"error":"invalid node sn "})
+            self.write_message({"error":"invalid node token"})
             self.connected = False
             self.close()
+            return
 
         self.cur_conn = self.find_node_conn(message.strip())
 
