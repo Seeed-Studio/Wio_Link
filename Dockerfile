@@ -11,7 +11,7 @@ ENV PATH /opt/xtensa-lx106-elf/bin:$PATH
 RUN apt-get update && \
     apt-get install -qqy --force-yes python-dev supervisor vim
 
-RUN pip install tornado
+RUN pip install 'tornado<5'
 RUN pip install PyJWT
 RUN pip install pycrypto
 RUN pip install PyYaml
