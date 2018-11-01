@@ -1,0 +1,36 @@
+FROM python:2.7.15-stretch
+MAINTAINER Jack Shao "jacky.shaoxg@gmail.com"
+
+#get the toolchain
+WORKDIR /opt
+RUN wget https://github.com/esp8266/Arduino/releases/download/2.3.0/linuxarm-xtensa-lx106-elf-g46f160f-2.tar.gz
+RUN tar -zxvf linuxarm-xtensa-lx106-elf-g46f160f-2.tar.gz
+ENV PATH /opt/xtensa-lx106-elf/bin:$PATH
+
+#install python modules
+RUN apt-get update && \
+    apt-get install -qqy --force-yes python-dev supervisor vim
+
+RUN pip install 'tornado<5'
+RUN pip install PyJWT
+RUN pip install pycrypto
+RUN pip install PyYaml
+RUN pip install tornado-cors
+RUN pip install psutil
+
+#add the files into image
+RUN mkdir -p /root/esp8266_iot_node
+WORKDIR /root/esp8266_iot_node
+COPY . /root/esp8266_iot_node
+RUN python ./scan_drivers.py
+RUN mv ./update.sh ../update.sh
+RUN chmod a+x ../update.sh
+
+#config supervisor
+RUN mv ./esp8266_server.conf /etc/supervisor/conf.d/esp8266_server.conf
+RUN mkdir -p /root/supervisor_log
+
+#expose ports
+EXPOSE 8000 8001 8080 8081
+
+CMD /etc/init.d/supervisor start && /bin/bash
