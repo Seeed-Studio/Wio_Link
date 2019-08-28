@@ -61,6 +61,13 @@ void suli_i2c_init(I2C_T *i2c_device, int pin_sda, int pin_clk)
     (*i2c_device)->begin(pin_sda, pin_clk);
 }
 
+/**
+ * set I2C clock frequency.
+ */
+void suli_i2c_clock(I2C_T *i2c_device, uint32_t frequency)
+{
+    (*i2c_device)->setClock(frequency);
+}
 
 /**
  * write a buff to I2C
