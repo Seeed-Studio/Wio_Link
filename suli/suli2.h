@@ -211,6 +211,10 @@ typedef TwoWire *I2C_T;
  */
 void suli_i2c_init(I2C_T *i2c_device, int pin_sda=0, int pin_clk=0);
 
+/**
+ * set I2C clock frequency.
+ */
+void suli_i2c_clock(I2C_T *i2c_device, uint32_t frequency);
 
 /**
  * write a buff to I2C
