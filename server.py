@@ -577,10 +577,21 @@ def main():
     enable_pretty_logging()
     options.parse_command_line()
 
+    database_path = os.environ.get('WIO_LINK_DATABASE_FOLDER')
+    if database_path:
+        database_path = os.path.join(database_path,'database.db')
+    else:
+        database_path = 'database.db'
+
+    app_port = os.environ.get('WIO_LINK_APP_PORT',8080)
+    ota_port = 8081
+    tcp_xchange_port = 8000
+    tcp_ota_port = 8001
+
     conn = None
     cur = None
     try:
-        conn = lite.connect('database.db')
+        conn = lite.connect(database_path)
         conn.row_factory = lite.Row
         cur = conn.cursor()
         cur.execute('SELECT SQLITE_VERSION()')
@@ -592,18 +603,18 @@ def main():
 
     app = myApplication(conn, cur)
     http_server = HTTPServer(app, xheaders=True)
-    http_server.listen(8080)
+    http_server.listen(app_port)
 
     app2 = myApplication_OTA(conn, cur)
     http_server2 = HTTPServer(app2)
-    http_server2.listen(8081)
+    http_server2.listen(ota_port)
 
 
     tcp_server = DeviceServer(conn, cur, 'xchange')
-    tcp_server.listen(8000)
+    tcp_server.listen(tcp_xchange_port)
 
     tcp_server2 = DeviceServer(conn, cur, 'ota')
-    tcp_server2.listen(8001)
+    tcp_server2.listen(tcp_ota_port)
 
     stat = Statistics()
 
