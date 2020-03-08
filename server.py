@@ -581,15 +581,15 @@ def main():
     database_path = os.environ.get('WIO_LINK_DATABASE_FOLDER')
     if database_path:
         database_path = os.path.join(database_path,'database.db')
-		if not os.path.exists(database_path):
-			if os.path.exists('database.db'):
-				gen_log.info("Creating Database in: %s" % database_path)
-				try:
-					shutil.copyfile('database.db',database_path)
-				except OSError, e:
-					gen_log.error(e)
-			else:
-				gen_log.error("Unable to locate default database")
+        if not os.path.exists(database_path):
+            if os.path.exists('database.db'):
+                gen_log.info("Creating Database in: %s" % database_path)
+                try:
+                    shutil.copyfile('database.db',database_path)
+                except OSError, e:
+                    gen_log.error(e)
+            else:
+                gen_log.error("Unable to locate default database")
     else:
         database_path = 'database.db'
 
