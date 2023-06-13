@@ -1,0 +1,6 @@
+psutil==5.9.5
+pycrypto==2.6.1
+PyJWT==1.7.1
+PyYAML==5.4.1
+tornado==4.5.3
+tornado-cors==0.6.0
