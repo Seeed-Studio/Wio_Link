@@ -1,0 +1,26 @@
+name: Automate PR Management
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  add_to_project:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout script repository
+        uses: actions/checkout@v4
+        with:
+          repository: Seeed-Studio/sync-github-all-issues
+          path: ci
+
+      - name: Run script
+        run: ./ci/tools/addPr2Project.sh
+        env:
+          PROJECT_ID: "17"
+          URL: ${{ github.event.pull_request.html_url }}
+          GITHUB_TOKEN: ${{ secrets.PR_ASSEMBLE }}
